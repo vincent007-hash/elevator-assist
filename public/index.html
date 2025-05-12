@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation Technique Ascenseurs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d32f2f;
+      --primary-dark: #b71c1c;
+      --bg-dark: #0d1117;
+      --card-dark: #161b22;
+      --text-light: #f0f6fc;
+      --text-secondary: #8b949e;
+      --border-dark: #30363d;
+      --highlight: #58a6ff;
+      --input-bg: #0d1117;
+      --input-border: #30363d;
+      --button-hover: #b71c1c;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+/* Style de base pour la navigation */
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+}
+
+/* Pour les écrans de taille moyenne et petite */
+@media screen and (max-width: 768px) {
+  .navigation {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  /* Menu de navigation */
+  .nav-links {
+    display: none; /* Caché par défaut sur mobile */
+    width: 100%;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .nav-links.active {
+    display: flex; /* S'affiche quand activé */
+  }
+  
+  /* Bouton hamburger */
+  .hamburger {
+    display: block;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
+/* Pour les grands écrans */
+@media screen and (min-width: 769px) {
+  .hamburger {
+    display: none; /* Cacher le bouton hamburger */
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+  }
+}
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2000');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(13, 17, 23, 0.85);
+      z-index: -1;
+    }
+    
+    /* Navigation améliorée - style fixe */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+     
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    header.transparent {
+      background-color: transparent;
+      box-shadow: none;
+    }
+    
+    header.scrolled {
+      padding: 0.8rem 2rem;
+      background-color: rgba(13, 17, 23, 0.95);
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .logo {
+      height: 160px;
+      width: auto;
+    }
+    
+    .logo-text {
+      color: var(--primary);
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+    }
+    
+    .nav-links a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      position: relative;
+      padding: 0.5rem 0;
+      transition: color 0.3s;
+    }
+    
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+    
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: var(--primary);
+      transition: width 0.3s ease;
+    }
+    
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .login-btn {
+      background-color: transparent;
+      color: var(--text-light);
+      border: 1px solid var(--primary);
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .login-btn:hover {
+      background-color: rgba(211, 47, 47, 0.1);
+    }
+    
+    .signup-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .signup-btn:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    /* Menu hamburger pour mobile */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    /* Contenu principal avec marge pour la navbar fixe */
+    main {
+      padding-top: 100px;
+    }
+    
+    .hero {
+      padding: 5rem 2rem;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, #fff, #d32f2f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .features {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .feature {
+      background-color: rgba(22, 27, 34, 0.5);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+    
+    .search-container {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dark);
+    }
+    
+    .search-container h3 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: var(--text-light);
+    }
+    
+    .search-box {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .search-box input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+    
+    .search-box button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .search-box button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    /* Historique de recherche */
+    .search-history {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-dark);
+      text-align: left;
+    }
+    
+    .search-history h4 {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    
+    .history-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .history-list li {
+      margin-bottom: 8px;
+    }
+    
+    .history-list a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+      display: block;
+      padding: 5px 10px;
+      border-radius: 4px;
+      background-color: rgba(22, 27, 34, 0.3);
+    }
+    
+    .history-list a:hover {
+      color: var(--text-light);
+      background-color: rgba(211, 47, 47, 0.2);
+    }
+    
+    /* Résultats de recherche */
+    .results-container {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 2rem;
+      border-radius: 8px;
+      margin: 2rem auto;
+      max-width: 1000px;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dark);
+      display: none;
+    }
+    
+    .results-container h2 {
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      color: var(--text-light);
+    }
+    
+    .result-card {
+      background-color: rgba(22, 27, 34, 0.5);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-dark);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .result-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .result-card h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      color: var(--text-light);
+    }
+    
+    .result-card button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    
+    .result-card button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    .subscribe {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 3rem 2rem;
+      margin-top: 5rem;
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-dark);
+    }
+    
+    .subscribe-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3rem;
+    }
+    
+    .subscribe h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .subscribe p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    
+    .subscribe-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .subscribe-form input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--text-light);
+    }
+    
+    .subscribe-form button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .footer-links h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-light);
+    }
+    
+    .footer-links ul {
+      list-style: none;
+    }
+    
+    .footer-links li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+    
+    footer {
+      background-color: rgba(13, 17, 23, 0.9);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-dark);
+    }
+    
+    /* Mode plein écran */
+    .pseudo-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      z-index: 9999;
+      display: none;
+      overflow: hidden;
+    }
+    
+    .pseudo-fullscreen.active {
+      display: block;
+    }
+    
+    .pseudo-fullscreen iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .back-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10000;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+      .nav-links {
+        gap: 1rem;
+      }
+      
+      .subscribe-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn {
+        display: block;
+      }
+      
+      .nav-links, .nav-buttons {
+        display: none;
+      }
+      
+      .nav-links.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background-color: rgba(13, 17, 23, 0.95);
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border-dark);
+      }
+      
+      .nav-buttons.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 250px;
+        left: 0;
+        width: 100%;
+        background-color: rgba(13, 17, 23, 0.95);
+        padding: 1rem 2rem;
+        gap: 1rem;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .subscribe-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header id="mainHeader">
+    <div class="logo-container">
+      <img src="/images/logo-elevator.png" alt="ELEVATOR" class="logo">
+    </div>
+    
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <nav class="nav-links" id="navLinks">
+      <a href="#">Accueil</a>
+      <a href="#">Actualités</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="nav-buttons" id="navButtons">
+      <button class="login-btn">Connexion</button>
+    </div>
+  </header>
+  
+  <main>
+    <section class="hero">
+      <h1>Documentation Technique Ascenseurs</h1>
+      <div class="features">
+        <div class="feature">Disponible 24/7</div>
+        <div class="feature">Recherche intelligente</div>
+      </div>
+      
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Recherchez un code défaut, une pièce, une procédure...">
+          <button id="searchButton">Rechercher</button>
+        </div>
+        <!-- Historique de recherche -->
+        <div id="searchHistory" class="search-history"></div>
+      </div>
+    </section>
+    
+    <!-- Conteneur pour les résultats de recherche -->
+    <section id="resultsContainer" class="results-container">
+      <h2>Résultats de recherche</h2>
+      <div id="results"></div>
+    </section>
+  </main>
+  
+  <section class="subscribe">
+    <div class="subscribe-container">
+      <div>
+     
+        </div>
+      </div>
+      
+      <div class="footer-links">
+        <h3>Liens rapides</h3>
+        <ul>
+          <li><a href="#">Accueil</a></li>
+          <li><a href="#">Manuels techniques</a></li>
+          <li><a href="#">Procédures d'intervention</a></li>
+          <li><a href="#">Contact support</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-links">
+        <h3>Ressources</h3>
+        <ul>
+          <li><a href="#">Formation en ligne</a></li>
+          <li><a href="#">Vidéos tutorielles</a></li>
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Téléchargements</a></li>
+          <li><a href="#">Assistance technique</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  
+  <footer>
+    <p>© 2025 ELEVATOR ASSIST. Tous droits réservés.</p>
+  </footer>
+  
+  <!-- Conteneur pour le pseudo-plein écran -->
+  <div id="pseudoFullscreen" class="pseudo-fullscreen">
+    <button id="backButton" class="back-btn">← RETOUR</button>
+    <iframe id="documentViewer" src="" allowfullscreen></iframe>
+  </div>
+  
+  <script>
+    // Attendre que le DOM soit chargé
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Éléments de navigation
+      const header = document.getElementById('mainHeader');
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const navLinks = document.getElementById('navLinks');
+      const navButtons = document.getElementById('navButtons');
+      
+      // Éléments de recherche
+      const searchButton = document.getElementById('searchButton');
+      const backButton = document.getElementById('backButton');
+      
+      // Gestionnaire pour le menu mobile
+      mobileMenuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
+        navButtons.classList.toggle('active');
+      });
+      
+      // Effet de transparence pour le header
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 100) {
+          header.classList.add('scrolled');
+          header.classList.remove('transparent');
+        } else {
+          header.classList.remove('scrolled');
+          if (window.scrollY < 10) {
+            header.classList.add('transparent');
+          }
+        }
+      });
+      
+      // Initialiser l'état du header
+      if (window.scrollY < 10) {
+        header.classList.add('transparent');
+      }
+      
+      // Recherche
+      searchButton.addEventListener('click', performSearch);
+      backButton.addEventListener('click', exitPseudoFullscreen);
+      
+      // Recherche avec la touche Entrée
+      document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          performSearch();
+        }
+      });
+      document.querySelector('.hamburger').addEventListener('click', function() {
+  document.querySelector('.nav-links').classList.toggle('active');
+});
+
+      // Afficher l'historique des recherches au chargement
+      displaySearchHistory();
+    });
+    
+    // Fonction pour ajouter une recherche à l'historique
+    function addToSearchHistory(query) {
+      // Récupérer l'historique existant ou créer un tableau vide
+      let searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      
+      // Éviter les doublons en supprimant la requête si elle existe déjà
+      searchHistory = searchHistory.filter(item => item !== query);
+      
+      // Ajouter la nouvelle recherche au début
+      searchHistory.unshift(query);
+      
+      // Limiter à 5 recherches maximum
+      if (searchHistory.length > 5) {
+        searchHistory.pop();
+      }
+      
+      // Sauvegarder l'historique mis à jour
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      
+      // Mettre à jour l'affichage
+      displaySearchHistory();
+    }
+    
+    // Fonction pour afficher l'historique des recherches
+    function displaySearchHistory() {
+      const searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      const historyContainer = document.getElementById('searchHistory');
+      
+      if (!historyContainer) return;
+      
+      if (searchHistory.length === 0) {
+        historyContainer.innerHTML = '<p>Aucune recherche récente</p>';
+        return;
+      }
+      
+      historyContainer.innerHTML = '<h4>Recherches récentes</h4>';
+      const historyList = document.createElement('ul');
+      historyList.className = 'history-list';
+      
+      searchHistory.forEach(query => {
+        const item = document.createElement('li');
+        item.innerHTML = `<a href="#" onclick="useHistoryItem('${query}'); return false;">${query}</a>`;
+        historyList.appendChild(item);
+      });
+      
+      historyContainer.appendChild(historyList);
+    }
+    
+    // Fonction pour utiliser une recherche de l'historique
+    function useHistoryItem(query) {
+      document.getElementById('searchInput').value = query;
+      performSearch();
+    }
+    
+    // Fonction de recherche
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value;
+      const results = document.getElementById('results');
+      const resultsContainer = document.getElementById('resultsContainer');
+      
+      if (!query) {
+        alert('Veuillez saisir un terme de recherche');
+        return;
+      }
+      
+      // Ajouter la recherche à l'historique
+      addToSearchHistory(query);
+      
+      results.innerHTML = '<p>Recherche en cours...</p>';
+      resultsContainer.style.display = 'block';
+      
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+          results.innerHTML = data.results.map(doc => {
+            return `
+              <div class="result-card">
+                <h3>${highlightText(doc.name, query)}</h3>
+                <button onclick="viewDocument('${doc.id || doc.fileId}')">Visualiser</button>
+              </div>
+            `;
+          }).join('');
+          
+          // Faire défiler jusqu'aux résultats
+          resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          results.innerHTML = '<p>Aucun résultat trouvé</p>';
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        results.innerHTML = '<p>Erreur lors de la recherche</p>';
+      }
+    }
+    
+    // Mettre en surbrillance le texte recherché
+    function highlightText(text, query) {
+      if (!text || !query) return text || '';
+      
+      const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${safeQuery})`, 'gi');
+      return text.replace(regex, '<mark>$1</mark>');
+    }
+    
+    // Visualiser un document
+    async function viewDocument(id) {
+      try {
+        const response = await fetch(`/api/view-file/${id}`);
+        const data = await response.json();
+        
+        // Configurer l'iframe
+        const viewer = document.getElementById('documentViewer');
+        viewer.src = data.previewUrl;
+        
+        // Activer le pseudo-plein écran
+        document.getElementById('pseudoFullscreen').classList.add('active');
+        
+        // Désactiver le défilement de la page principale
+        document.body.style.overflow = 'hidden';
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement du document');
+      }
+    }
+    
+    // Sortir du pseudo-plein écran
+    function exitPseudoFullscreen() {
+      document.getElementById('pseudoFullscreen').classList.remove('active');
+      document.body.style.overflow = 'auto';
+      document.getElementById('documentViewer').src = '';
+    }
+    
+    // Ajouter un gestionnaire d'événements pour la touche Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('pseudoFullscreen').classList.contains('active')) {
+        exitPseudoFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
