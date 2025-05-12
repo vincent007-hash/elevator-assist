@@ -5,7 +5,7 @@ const { google } = require('googleapis');
 const { authorize, listDriveFiles, getFilePreview } = require('./drive.js');
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 3000;
 const upload = multer({ dest: 'uploads/' });
 
 // Configuration
@@ -102,4 +102,6 @@ app.get('/oauth2callback', (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Serveur prêt sur http://localhost:${PORT}`));
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Serveur démarré sur le port ${port}`);
+});
