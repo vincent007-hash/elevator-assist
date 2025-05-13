@@ -188,38 +188,17 @@ async function getFilePreview(fileId) {
     // Créer l'URL de prévisualisation sécurisée
     let previewUrl;
     if (file.data.mimeType === 'application/pdf') {
-      // Format prévisualisation pour PDF sans téléchargement
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
     } else if (file.data.mimeType.includes('image/')) {
-      // Format prévisualisation pour images
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
     } else if (file.data.mimeType.includes('spreadsheet')) {
-      // Format prévisualisation pour feuilles de calcul
-      previewUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview`;
+      previewUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview?pli=1`;
     } else if (file.data.mimeType.includes('document')) {
-      // Format prévisualisation pour documents
-      previewUrl = `https://docs.google.com/document/d/${fileId}/preview`;
+      previewUrl = `https://docs.google.com/document/d/${fileId}/preview?pli=1`;
     } else {
-      // Format par défaut
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
     }
     
-// Créer l'iframe avec des protections supplémentaires
-const previewContainer = document.createElement('div');
-previewContainer.innerHTML = `
-  <div class="preview-wrapper" style="user-select: none;">
-    <iframe 
-      src="${previewUrl}"
-      sandbox="allow-scripts allow-same-origin allow-popups"
-      oncontextmenu="return false;"
-      width="100%" height="100%">
-    </iframe>
-  </div>
-`;
-
-// Désactiver le clic droit
-previewContainer.addEventListener('contextmenu', e => e.preventDefault());
-
     return {
       ...file.data,
       previewUrl: previewUrl
@@ -229,6 +208,24 @@ previewContainer.addEventListener('contextmenu', e => e.preventDefault());
     throw error;
   }
 }
+
+// Ajoutez ce code après avoir obtenu le fichier
+await drive.permissions.update({
+  fileId: fileId,
+  permissionId: 'anyoneWithLink',
+  resource: {
+    role: 'reader',
+  }
+});
+
+// Désactiver les options de téléchargement, impression et copie
+await drive.files.update({
+  fileId: fileId,
+  resource: {
+    copyRequiresWriterPermission: true
+  }
+});
+
 
 module.exports = {
   authorize,
