@@ -188,15 +188,20 @@ async function getFilePreview(fileId) {
     // Créer l'URL de prévisualisation sécurisée
     let previewUrl;
     if (file.data.mimeType === 'application/pdf') {
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
+      // Format prévisualisation pour PDF sans téléchargement
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     } else if (file.data.mimeType.includes('image/')) {
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
+      // Format prévisualisation pour images
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     } else if (file.data.mimeType.includes('spreadsheet')) {
-      previewUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview?pli=1`;
+      // Format prévisualisation pour feuilles de calcul
+      previewUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview`;
     } else if (file.data.mimeType.includes('document')) {
-      previewUrl = `https://docs.google.com/document/d/${fileId}/preview?pli=1`;
+      // Format prévisualisation pour documents
+      previewUrl = `https://docs.google.com/document/d/${fileId}/preview`;
     } else {
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview?pli=1`;
+      // Format par défaut
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     }
     
     return {
@@ -208,24 +213,6 @@ async function getFilePreview(fileId) {
     throw error;
   }
 }
-
-// Ajoutez ce code après avoir obtenu le fichier
-await drive.permissions.update({
-  fileId: fileId,
-  permissionId: 'anyoneWithLink',
-  resource: {
-    role: 'reader',
-  }
-});
-
-// Désactiver les options de téléchargement, impression et copie
-await drive.files.update({
-  fileId: fileId,
-  resource: {
-    copyRequiresWriterPermission: true
-  }
-});
-
 
 module.exports = {
   authorize,
