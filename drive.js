@@ -41,7 +41,102 @@ async function listDriveFiles(searchQuery) {
         q += ` and (name contains '${searchQuery}' or fullText contains '${searchQuery}')`;
       }
     }
+
+    // Fonction pour lister les fichiers Drive avec recherche améliorée
+async function listDriveFiles(query) {
+  try {
+    const auth = await authorize();
+    const drive = google.drive({ version: 'v3', auth });
     
+    let q = "trashed=false";
+    
+    if (query) {
+      // Détecter si la requête contient des mots-clés spécifiques
+      const lowerQuery = query.toLowerCase();
+      
+      // Extraire les potentielles marques d'ascenseur de la requête
+      const brands = ['kone', 'otis', 'schindler', 'thyssenkrupp', 'mitsubishi', 'orona'];
+      const detectedBrands = brands.filter(brand => lowerQuery.includes(brand));
+      
+      // Extraire les potentiels types de documents de la requête
+      const docTypes = {
+        'pdf': 'application/pdf',
+        'document': 'document',
+        'feuille': 'spreadsheet',
+        'excel': 'spreadsheet',
+        'image': 'image/',
+        'photo': 'image/'
+      };
+      
+      let typeFilters = [];
+      for (const [keyword, mimeType] of Object.entries(docTypes)) {
+        if (lowerQuery.includes(keyword)) {
+          typeFilters.push(`mimeType contains '${mimeType}'`);
+        }
+      }
+      
+      // Construire la requête de recherche avancée
+      let searchTerms = [];
+      
+      // Ajouter les termes de recherche généraux
+      searchTerms.push(`(name contains '${query}' or fullText contains '${query}')`);
+      
+      // Si des marques spécifiques sont détectées, les prioriser
+      if (detectedBrands.length > 0) {
+        const brandFilters = detectedBrands.map(brand => `name contains '${brand}'`);
+        searchTerms.push(`(${brandFilters.join(' or ')})`);
+      }
+      
+      // Si des types de documents sont détectés, les filtrer
+      if (typeFilters.length > 0) {
+        searchTerms.push(`(${typeFilters.join(' or ')})`);
+      }
+      
+      // Combiner tous les termes de recherche
+      q += ` and ${searchTerms.join(' and ')}`;
+    }
+    
+    console.log("Requête de recherche:", q); // Pour le débogage
+    
+    const res = await drive.files.list({
+      q: q,
+      fields: 'files(id, name, mimeType, webViewLink)',
+      spaces: 'drive',
+      pageSize: 20,
+      orderBy: 'relevance' // Trier par pertinence
+    });
+    
+    // Transformer les résultats pour inclure des URL de prévisualisation sécurisées
+    const files = res.data.files.map(file => {
+      let previewUrl;
+      
+      // Générer l'URL de prévisualisation selon le type de fichier
+      if (file.mimeType === 'application/pdf') {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('image/')) {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('spreadsheet')) {
+        previewUrl = `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('document')) {
+        previewUrl = `https://docs.google.com/document/d/${file.id}/preview`;
+      } else {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      }
+      
+      return {
+        ...file,
+        previewUrl: previewUrl
+      };
+    });
+    
+    return files;
+  } catch (error) {
+    console.error('Erreur recherche Drive:', error);
+    throw error;
+  }
+}
+
+
     const res = await drive.files.list({
       q: q,
       fields: 'files(id, name, mimeType, webViewLink)',
