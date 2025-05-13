@@ -663,6 +663,36 @@
           <input type="text" id="searchInput" placeholder="Recherchez un code défaut, une pièce, une procédure...">
           <button id="searchButton">Rechercher</button>
         </div>
+
+        <div class="filters-section">
+          <div class="filter-group">
+            <label for="document-type">Type de document :</label>
+            <select id="document-type" class="filter-select">
+              <option value="">Tous les types</option>
+              <option value="pdf">PDF</option>
+              <option value="document">Documents texte</option>
+              <option value="spreadsheet">Feuilles de calcul</option>
+              <option value="image">Images</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="elevator-brand">Marque d'ascenseur :</label>
+            <select id="elevator-brand" class="filter-select">
+              <option value="">Toutes les marques</option>
+              <option value="kone">KONE</option>
+              <option value="otis">OTIS</option>
+              <option value="schindler">Schindler</option>
+              <option value="thyssenkrupp">ThyssenKrupp</option>
+              <option value="mitsubishi">Mitsubishi</option>
+              <option value="orona">Orona</option>
+            </select>
+          </div>
+          
+          <button id="apply-filters" class="filter-button">Appliquer les filtres</button>
+        </div>
+        
+
         <!-- Historique de recherche -->
         <div id="searchHistory" class="search-history"></div>
       </div>
@@ -934,33 +964,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-<div class="filters-section">
-  <div class="filter-group">
-    <label for="document-type">Type de document :</label>
-    <select id="document-type" class="filter-select">
-      <option value="">Tous les types</option>
-      <option value="pdf">PDF</option>
-      <option value="document">Documents texte</option>
-      <option value="spreadsheet">Feuilles de calcul</option>
-      <option value="image">Images</option>
-    </select>
-  </div>
-  
-  <div class="filter-group">
-    <label for="elevator-brand">Marque d'ascenseur :</label>
-    <select id="elevator-brand" class="filter-select">
-      <option value="">Toutes les marques</option>
-      <option value="kone">KONE</option>
-      <option value="otis">OTIS</option>
-      <option value="schindler">Schindler</option>
-      <option value="thyssenkrupp">ThyssenKrupp</option>
-      <option value="mitsubishi">Mitsubishi</option>
-      <option value="orona">Orona</option>
-    </select>
-  </div>
-  
-  <button id="apply-filters" class="filter-button">Appliquer les filtres</button>
-</div>
 
 
       // Ajouter la recherche à l'historique
