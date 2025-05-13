@@ -204,6 +204,22 @@ async function getFilePreview(fileId) {
       previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     }
     
+// Créer l'iframe avec des protections supplémentaires
+const previewContainer = document.createElement('div');
+previewContainer.innerHTML = `
+  <div class="preview-wrapper" style="user-select: none;">
+    <iframe 
+      src="${previewUrl}"
+      sandbox="allow-scripts allow-same-origin allow-popups"
+      oncontextmenu="return false;"
+      width="100%" height="100%">
+    </iframe>
+  </div>
+`;
+
+// Désactiver le clic droit
+previewContainer.addEventListener('contextmenu', e => e.preventDefault());
+
     return {
       ...file.data,
       previewUrl: previewUrl
