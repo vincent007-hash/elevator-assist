@@ -102,6 +102,7 @@ app.get('/oauth2callback', (req, res) => {
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Serveur démarré sur le port ${port}`);
+app.listen(process.env.PORT || 10000, '0.0.0.0', () => {
+  console.log(`Serveur démarré sur le port ${process.env.PORT || 10000}`);
 });
+
