@@ -50,33 +50,33 @@ async function listDriveFiles(searchQuery) {
     });
     
 // Transformer les résultats pour inclure des URL de prévisualisation sécurisées
-const files = res.data.files.map(file => {
-  let previewUrl;
-  
-  // Générer l'URL de prévisualisation selon le type de fichier
-  if (file.mimeType === 'application/pdf') {
-    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-  } else if (file.mimeType.includes('image/')) {
-    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-  } else if (file.mimeType.includes('spreadsheet')) {
-    previewUrl = `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
-  } else if (file.mimeType.includes('document')) {
-    previewUrl = `https://docs.google.com/document/d/${file.id}/preview`;
-  } else {
-    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+    const files = res.data.files.map(file => {
+      let previewUrl;
+      
+      // Générer l'URL de prévisualisation selon le type de fichier
+      if (file.mimeType === 'application/pdf') {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('image/')) {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('spreadsheet')) {
+        previewUrl = `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
+      } else if (file.mimeType.includes('document')) {
+        previewUrl = `https://docs.google.com/document/d/${file.id}/preview`;
+      } else {
+        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+      }
+      
+      return {
+        ...file,
+        previewUrl: previewUrl
+      };
+    });
+    
+    return files;
+  } catch (error) {
+    console.error('Erreur recherche Drive:', error);
+    throw error;
   }
-  
-  return {
-    ...file,
-    previewUrl: previewUrl
-  };
-});
-
-return files;
-} catch (error) {
-console.error('Erreur recherche Drive:', error);
-throw error;
-}
 }
 
 // Fonction pour obtenir l'aperçu d'un fichier
