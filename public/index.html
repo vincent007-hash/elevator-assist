@@ -1,493 +1,852 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELEVATOR ASSIST - Documentation Technique Ascenseurs</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --dark-color: #34495e;
-            --success-color: #2ecc71;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo i {
-            margin-right: 10px;
-            color: var(--secondary-color);
-        }
-        
-        .search-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        
-        .search-container h1 {
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
-        
-        .search-box {
-            display: flex;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .search-box input {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 5px 0 0 5px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        
-        .search-box input:focus {
-            border-color: var(--secondary-color);
-        }
-        
-        .search-box button {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 0 5px 5px 0;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        
-        .search-box button:hover {
-            background-color: #2980b9;
-        }
-        
-        .features {
-            display: flex;
-            justify-content: space-around;
-            margin: 40px 0;
-            flex-wrap: wrap;
-        }
-        
-        .feature {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px;
-            text-align: center;
-            flex: 1;
-            min-width: 250px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
-        }
-        
-        .feature:hover {
-            transform: translateY(-5px);
-        }
-        
-        .feature i {
-            font-size: 40px;
-            margin-bottom: 15px;
-            color: var(--secondary-color);
-        }
-        
-        .feature h3 {
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-        
-        .results-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .result-item {
-            border-bottom: 1px solid #eee;
-            padding: 15px 0;
-        }
-        
-        .result-item:last-child {
-            border-bottom: none;
-        }
-        
-        .result-item h3 {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
-        }
-        
-        .result-item p {
-            margin-bottom: 10px;
-            color: #666;
-        }
-        
-        .result-item .meta {
-            font-size: 14px;
-            color: #999;
-        }
-        
-        .result-item .view-btn {
-            display: inline-block;
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-        
-        .result-item .view-btn:hover {
-            background-color: #2980b9;
-        }
-        
-        .sidebar {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .sidebar h2 {
-            color: var(--primary-color);
-            margin-bottom: 15px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-        
-        .sidebar ul {
-            list-style: none;
-        }
-        
-        .sidebar ul li {
-            margin-bottom: 10px;
-        }
-        
-        .sidebar ul li a {
-            color: var(--secondary-color);
-            text-decoration: none;
-            display: block;
-            padding: 8px 0;
-            transition: color 0.3s;
-        }
-        
-        .sidebar ul li a:hover {
-            color: var(--accent-color);
-        }
-        
-        .sidebar ul li a i {
-            margin-right: 10px;
-        }
-        
-        .main-content {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        
-        .content-area {
-            flex: 2;
-            min-width: 300px;
-        }
-        
-        .sidebar-area {
-            flex: 1;
-            min-width: 250px;
-            margin-left: 20px;
-        }
-        
-        footer {
-            background-color: var(--dark-color);
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            margin-top: 40px;
-        }
-        
-        .back-button {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin: 20px 0;
-            transition: background-color 0.3s;
-        }
-        
-        .back-button:hover {
-            background-color: var(--dark-color);
-        }
-        
-        .document-viewer {
-            width: 100%;
-            height: 800px;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .sidebar-area {
-                margin-left: 0;
-                margin-top: 20px;
-            }
-            
-            .search-box {
-                flex-direction: column;
-            }
-            
-            .search-box input {
-                border-radius: 5px;
-                margin-bottom: 10px;
-            }
-            
-            .search-box button {
-                border-radius: 5px;
-            }
-            
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .logo {
-                margin-bottom: 15px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation Technique Ascenseurs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d32f2f;
+      --primary-dark: #b71c1c;
+      --bg-dark: #0d1117;
+      --card-dark: #161b22;
+      --text-light: #f0f6fc;
+      --text-secondary: #8b949e;
+      --border-dark: #30363d;
+      --highlight: #58a6ff;
+      --input-bg: #0d1117;
+      --input-border: #30363d;
+      --button-hover: #b71c1c;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+/* Style de base pour la navigation */
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+}
+
+/* Pour les écrans de taille moyenne et petite */
+@media screen and (max-width: 768px) {
+  .navigation {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  /* Menu de navigation */
+  .nav-links {
+    display: none; /* Caché par défaut sur mobile */
+    width: 100%;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .nav-links.active {
+    display: flex; /* S'affiche quand activé */
+  }
+  
+  /* Bouton hamburger */
+  .hamburger {
+    display: block;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
+/* Pour les grands écrans */
+@media screen and (min-width: 769px) {
+  .hamburger {
+    display: none; /* Cacher le bouton hamburger */
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+  }
+}
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2000');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(13, 17, 23, 0.85);
+      z-index: -1;
+    }
+    
+    /* Navigation améliorée - style fixe */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+     
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    header.transparent {
+      background-color: transparent;
+      box-shadow: none;
+    }
+    
+    header.scrolled {
+      padding: 0.8rem 2rem;
+      background-color: rgba(13, 17, 23, 0.95);
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .logo {
+      height: 160px;
+      width: auto;
+    }
+    
+    .logo-text {
+      color: var(--primary);
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+    }
+    
+    .nav-links a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      position: relative;
+      padding: 0.5rem 0;
+      transition: color 0.3s;
+    }
+    
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+    
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: var(--primary);
+      transition: width 0.3s ease;
+    }
+    
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .login-btn {
+      background-color: transparent;
+      color: var(--text-light);
+      border: 1px solid var(--primary);
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .login-btn:hover {
+      background-color: rgba(211, 47, 47, 0.1);
+    }
+    
+    .signup-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .signup-btn:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    /* Menu hamburger pour mobile */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    /* Contenu principal avec marge pour la navbar fixe */
+    main {
+      padding-top: 100px;
+    }
+    
+    .hero {
+      padding: 5rem 2rem;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, #fff, #d32f2f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .features {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .feature {
+      background-color: rgba(22, 27, 34, 0.5);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+    
+    .search-container {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dark);
+    }
+    
+    .search-container h3 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: var(--text-light);
+    }
+    
+    .search-box {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .search-box input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+    
+    .search-box button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .search-box button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    /* Historique de recherche */
+    .search-history {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-dark);
+      text-align: left;
+    }
+    
+    .search-history h4 {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    
+    .history-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .history-list li {
+      margin-bottom: 8px;
+    }
+    
+    .history-list a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+      display: block;
+      padding: 5px 10px;
+      border-radius: 4px;
+      background-color: rgba(22, 27, 34, 0.3);
+    }
+    
+    .history-list a:hover {
+      color: var(--text-light);
+      background-color: rgba(211, 47, 47, 0.2);
+    }
+    
+    /* Résultats de recherche */
+    .results-container {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 2rem;
+      border-radius: 8px;
+      margin: 2rem auto;
+      max-width: 1000px;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dark);
+      display: none;
+    }
+    
+    .results-container h2 {
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      color: var(--text-light);
+    }
+    
+    .result-card {
+      background-color: rgba(22, 27, 34, 0.5);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-dark);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .result-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .result-card h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      color: var(--text-light);
+    }
+    
+    .result-card button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    
+    .result-card button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    .subscribe {
+      background-color: rgba(22, 27, 34, 0.7);
+      padding: 3rem 2rem;
+      margin-top: 5rem;
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-dark);
+    }
+    
+    .subscribe-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3rem;
+    }
+    
+    .subscribe h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .subscribe p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    
+    .subscribe-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .subscribe-form input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--text-light);
+    }
+    
+    .subscribe-form button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .footer-links h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-light);
+    }
+    
+    .footer-links ul {
+      list-style: none;
+    }
+    
+    .footer-links li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+    
+    footer {
+      background-color: rgba(13, 17, 23, 0.9);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-dark);
+    }
+    
+    /* Mode plein écran */
+    .pseudo-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      z-index: 9999;
+      display: none;
+      overflow: hidden;
+    }
+    
+    .pseudo-fullscreen.active {
+      display: block;
+    }
+    
+    .pseudo-fullscreen iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .back-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10000;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+      .nav-links {
+        gap: 1rem;
+      }
+      
+      .subscribe-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn {
+        display: block;
+      }
+      
+      .nav-links, .nav-buttons {
+        display: none;
+      }
+      
+      .nav-links.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background-color: rgba(13, 17, 23, 0.95);
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border-dark);
+      }
+      
+      .nav-buttons.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 250px;
+        left: 0;
+        width: 100%;
+        background-color: rgba(13, 17, 23, 0.95);
+        padding: 1rem 2rem;
+        gap: 1rem;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .subscribe-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-elevator"></i>
-                    <span>ELEVATOR ASSIST</span>
-                </div>
-            </div>
-        </div>
-    </header>
-    
-    <div class="container">
-        <div class="search-container">
-            <h1>Documentation Technique Ascenseurs</h1>
-            <form class="search-box" id="search-form">
-                <input type="text" id="search-input" placeholder="Rechercher par modèle, code défaut, composant..." required>
-                <button type="submit"><i class="fas fa-search"></i> Rechercher</button>
-            </form>
-        </div>
-        
-        <div class="features">
-            <div class="feature">
-                <i class="fas fa-clock"></i>
-                <h3>Disponible 24/7</h3>
-                <p>Accédez à la documentation technique à tout moment, où que vous soyez.</p>
-            </div>
-            <div class="feature">
-                <i class="fas fa-search"></i>
-                <h3>Recherche intelligente</h3>
-                <p>Trouvez rapidement les informations dont vous avez besoin grâce à notre moteur de recherche avancé.</p>
-            </div>
-            <div class="feature">
-                <i class="fas fa-file-pdf"></i>
-                <h3>Visualisation intégrée</h3>
-                <p>Consultez les documents techniques directement dans l'application sans téléchargement.</p>
-            </div>
-        </div>
-        
-        <div class="main-content">
-            <div class="content-area">
-                <div class="results-container" id="results-container">
-                    <h2>Résultats de recherche</h2>
-                    <div id="search-results">
-                        <!-- Les résultats de recherche seront affichés ici -->
-                    </div>
-                </div>
-                
-                <div id="document-view" style="display: none;">
-                    <a href="#" class="back-button" id="back-button"><i class="fas fa-arrow-left"></i> RETOUR</a>
-                    <iframe class="document-viewer" id="document-iframe" allowfullscreen></iframe>
-                </div>
-            </div>
-            
-            <div class="sidebar-area">
-                <div class="sidebar">
-                    <h2>Liens rapides</h2>
-                    <ul>
-                        <li><a href="#"><i class="fas fa-home"></i> Accueil</a></li>
-                        <li><a href="#"><i class="fas fa-book"></i> Manuels techniques</a></li>
-                        <li><a href="#"><i class="fas fa-tools"></i> Procédures d'intervention</a></li>
-                        <li><a href="#"><i class="fas fa-headset"></i> Contact support</a></li>
-                    </ul>
-                </div>
-                
-                <div class="sidebar">
-                    <h2>Ressources</h2>
-                    <ul>
-                        <li><a href="#"><i class="fas fa-graduation-cap"></i> Formation en ligne</a></li>
-                        <li><a href="#"><i class="fas fa-video"></i> Vidéos tutorielles</a></li>
-                        <li><a href="#"><i class="fas fa-question-circle"></i> FAQ</a></li>
-                        <li><a href="#"><i class="fas fa-download"></i> Téléchargements</a></li>
-                        <li><a href="#"><i class="fas fa-phone-alt"></i> Assistance technique</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+  <header id="mainHeader">
+    <div class="logo-container">
+      <img src="/images/logo-elevator.png" alt="ELEVATOR" class="logo">
     </div>
     
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 ELEVATOR ASSIST - Documentation Technique pour Techniciens Ascensoristes</p>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <nav class="nav-links" id="navLinks">
+      <a href="#">Accueil</a>
+      <a href="#">Actualités</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="nav-buttons" id="navButtons">
+      <button class="login-btn">Connexion</button>
+    </div>
+  </header>
+  
+  <main>
+    <section class="hero">
+      <h1>Documentation Technique Ascenseurs</h1>
+      <div class="features">
+        <div class="feature">Disponible 24/7</div>
+        <div class="feature">Recherche intelligente</div>
+      </div>
+      
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Recherchez un code défaut, une pièce, une procédure...">
+          <button id="searchButton">Rechercher</button>
         </div>
-    </footer>
+        <!-- Historique de recherche -->
+        <div id="searchHistory" class="search-history"></div>
+      </div>
+    </section>
+    
+    <!-- Conteneur pour les résultats de recherche -->
+    <section id="resultsContainer" class="results-container">
+      <h2>Résultats de recherche</h2>
+      <div id="results"></div>
+    </section>
+  </main>
+  
+  <section class="subscribe">
+    <div class="subscribe-container">
+      <div>
+     
+        </div>
+      </div>
+      
+      <div class="footer-links">
+        <h3>Liens rapides</h3>
+        <ul>
+          <li><a href="#">Accueil</a></li>
+          <li><a href="#">Manuels techniques</a></li>
+          <li><a href="#">Procédures d'intervention</a></li>
+          <li><a href="#">Contact support</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-links">
+        <h3>Ressources</h3>
+        <ul>
+          <li><a href="#">Formation en ligne</a></li>
+          <li><a href="#">Vidéos tutorielles</a></li>
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Téléchargements</a></li>
+          <li><a href="#">Assistance technique</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  
+  <footer>
+    <p>© 2025 ELEVATOR ASSIST. Tous droits réservés.</p>
+  </footer>
+  
+  <!-- Conteneur pour le pseudo-plein écran -->
+  <div id="pseudoFullscreen" class="pseudo-fullscreen">
+    <button id="backButton" class="back-btn">← RETOUR</button>
+    <iframe id="documentViewer" src="" allowfullscreen></iframe>
+  </div>
+  
+  <script>
+    // Attendre que le DOM soit chargé
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Éléments de navigation
+      const header = document.getElementById('mainHeader');
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const navLinks = document.getElementById('navLinks');
+      const navButtons = document.getElementById('navButtons');
+      
+      // Éléments de recherche
+      const searchButton = document.getElementById('searchButton');
+      const backButton = document.getElementById('backButton');
+      
+      // Gestionnaire pour le menu mobile
+      mobileMenuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
+        navButtons.classList.toggle('active');
+      });
+      
+      // Effet de transparence pour le header
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 100) {
+          header.classList.add('scrolled');
+          header.classList.remove('transparent');
+        } else {
+          header.classList.remove('scrolled');
+          if (window.scrollY < 10) {
+            header.classList.add('transparent');
+          }
+        }
+      });
+      
+      // Initialiser l'état du header
+      if (window.scrollY < 10) {
+        header.classList.add('transparent');
+      }
+      
+      // Recherche
+      searchButton.addEventListener('click', performSearch);
+      backButton.addEventListener('click', exitPseudoFullscreen);
+      
+      // Recherche avec la touche Entrée
+      document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          performSearch();
+        }
+      });
+      document.querySelector('.hamburger').addEventListener('click', function() {
+  document.querySelector('.nav-links').classList.toggle('active');
+});
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchForm = document.getElementById('search-form');
-            const searchInput = document.getElementById('search-input');
-            const resultsContainer = document.getElementById('results-container');
-            const searchResults = document.getElementById('search-results');
-            const documentView = document.getElementById('document-view');
-            const documentIframe = document.getElementById('document-iframe');
-            const backButton = document.getElementById('back-button');
-            
-            // Gérer la soumission du formulaire de recherche
-            searchForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const query = searchInput.value.trim();
-                
-                if (query) {
-                    // Afficher un indicateur de chargement
-                    searchResults.innerHTML = '<p>Recherche en cours...</p>';
-                    
-                    // Envoyer la requête au serveur
-                    fetch(`/api/search?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            // Afficher les résultats
-                            displayResults(data);
-                        })
-                        .catch(error => {
-                            console.error('Erreur lors de la recherche:', error);
-                            searchResults.innerHTML = '<p>Une erreur est survenue lors de la recherche. Veuillez réessayer.</p>';
-                        });
-                }
-            });
-            
-            // Afficher les résultats de recherche
-            function displayResults(results) {
-                if (results.length === 0) {
-                    searchResults.innerHTML = '<p>Aucun résultat trouvé. Veuillez essayer avec d\'autres termes.</p>';
-                    return;
-                }
-                
-                let html = '';
-                results.forEach(result => {
-                    html += `
-                        <div class="result-item">
-                            <h3>${result.name}</h3>
-                            <p>${result.description || 'Aucune description disponible.'}</p>
-                            <div class="meta">
-                                <span>Type: ${result.mimeType}</span>
-                            </div>
-                            <a href="#" class="view-btn" data-id="${result.id}" data-preview="${result.previewUrl}">
-                                <i class="fas fa-eye"></i> Visualiser
-                            </a>
-                        </div>
-                    `;
-                });
-                
-                searchResults.innerHTML = html;
-                
-                // Ajouter des écouteurs d'événements aux boutons de visualisation
-                document.querySelectorAll('.view-btn').forEach(button => {
-                    button.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const fileId = this.getAttribute('data-id');
-                        
-                        // Afficher l'indicateur de chargement
-                        documentIframe.src = '';
-                        documentView.style.display = 'block';
-                        resultsContainer.style.display = 'none';
-                        
-                        // Récupérer les informations de prévisualisation du fichier
-                        fetch(`/api/preview/${fileId}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                // Utiliser l'URL de prévisualisation pour afficher le document
-                                // Utiliser le format /preview au lieu de /view pour éviter le téléchargement
-                                const previewUrl = data.previewUrl.replace('/view', '/preview');
-                                documentIframe.src = previewUrl;
-                            })
-                            .catch(error => {
-                                console.error('Erreur lors de la récupération de la prévisualisation:', error);
-                                documentIframe.src = 'error.html';
-                            });
-                    });
-                });
-            }
-            
-            // Gérer le bouton de retour
-            backButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                documentView.style.display = 'none';
-                resultsContainer.style.display = 'block';
-                documentIframe.src = '';
-            });
-        });
-    </script>
+      // Afficher l'historique des recherches au chargement
+      displaySearchHistory();
+    });
+    
+    // Fonction pour ajouter une recherche à l'historique
+    function addToSearchHistory(query) {
+      // Récupérer l'historique existant ou créer un tableau vide
+      let searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      
+      // Éviter les doublons en supprimant la requête si elle existe déjà
+      searchHistory = searchHistory.filter(item => item !== query);
+      
+      // Ajouter la nouvelle recherche au début
+      searchHistory.unshift(query);
+      
+      // Limiter à 5 recherches maximum
+      if (searchHistory.length > 5) {
+        searchHistory.pop();
+      }
+      
+      // Sauvegarder l'historique mis à jour
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      
+      // Mettre à jour l'affichage
+      displaySearchHistory();
+    }
+    
+    // Fonction pour afficher l'historique des recherches
+    function displaySearchHistory() {
+      const searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      const historyContainer = document.getElementById('searchHistory');
+      
+      if (!historyContainer) return;
+      
+      if (searchHistory.length === 0) {
+        historyContainer.innerHTML = '<p>Aucune recherche récente</p>';
+        return;
+      }
+      
+      historyContainer.innerHTML = '<h4>Recherches récentes</h4>';
+      const historyList = document.createElement('ul');
+      historyList.className = 'history-list';
+      
+      searchHistory.forEach(query => {
+        const item = document.createElement('li');
+        item.innerHTML = `<a href="#" onclick="useHistoryItem('${query}'); return false;">${query}</a>`;
+        historyList.appendChild(item);
+      });
+      
+      historyContainer.appendChild(historyList);
+    }
+    
+    // Fonction pour utiliser une recherche de l'historique
+    function useHistoryItem(query) {
+      document.getElementById('searchInput').value = query;
+      performSearch();
+    }
+    
+    // Fonction de recherche
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value;
+      const results = document.getElementById('results');
+      const resultsContainer = document.getElementById('resultsContainer');
+      
+      if (!query) {
+        alert('Veuillez saisir un terme de recherche');
+        return;
+      }
+      
+      // Ajouter la recherche à l'historique
+      addToSearchHistory(query);
+      
+      results.innerHTML = '<p>Recherche en cours...</p>';
+      resultsContainer.style.display = 'block';
+      
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+          results.innerHTML = data.results.map(doc => {
+            return `
+              <div class="result-card">
+                <h3>${highlightText(doc.name, query)}</h3>
+                <button onclick="viewDocument('${doc.id || doc.fileId}')">Visualiser</button>
+              </div>
+            `;
+          }).join('');
+          
+          // Faire défiler jusqu'aux résultats
+          resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          results.innerHTML = '<p>Aucun résultat trouvé</p>';
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        results.innerHTML = '<p>Erreur lors de la recherche</p>';
+      }
+    }
+    
+    // Mettre en surbrillance le texte recherché
+    function highlightText(text, query) {
+      if (!text || !query) return text || '';
+      
+      const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${safeQuery})`, 'gi');
+      return text.replace(regex, '<mark>$1</mark>');
+    }
+    
+    // Visualiser un document
+    async function viewDocument(id) {
+      try {
+        const response = await fetch(`/api/view-file/${id}`);
+        const data = await response.json();
+        
+        // Configurer l'iframe
+        const viewer = document.getElementById('documentViewer');
+        viewer.src = data.previewUrl;
+        
+        // Activer le pseudo-plein écran
+        document.getElementById('pseudoFullscreen').classList.add('active');
+        
+        // Désactiver le défilement de la page principale
+        document.body.style.overflow = 'hidden';
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement du document');
+      }
+    }
+    
+    // Sortir du pseudo-plein écran
+    function exitPseudoFullscreen() {
+      document.getElementById('pseudoFullscreen').classList.remove('active');
+      document.body.style.overflow = 'auto';
+      document.getElementById('documentViewer').src = '';
+    }
+    
+    // Ajouter un gestionnaire d'événements pour la touche Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('pseudoFullscreen').classList.contains('active')) {
+        exitPseudoFullscreen();
+      }
+    });
+  </script>
 </body>
 </html>
