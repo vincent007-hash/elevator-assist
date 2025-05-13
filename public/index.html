@@ -567,6 +567,69 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Styles pour les filtres */
+.filters-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.filter-group label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.filter-select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filter-button {
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 20px;
+  align-self: flex-end;
+}
+
+.filter-button:hover {
+  background-color: #0062a9;
+}
+
+@media (max-width: 768px) {
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-button {
+    width: 100%;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -708,6 +771,104 @@
       displaySearchHistory();
     });
     
+// Variables globales pour les filtres
+let currentDocumentType = '';
+let currentElevatorBrand = '';
+let currentSearchResults = [];
+
+// Fonction pour initialiser les filtres
+function initializeFilters() {
+  const documentTypeFilter = document.getElementById('document-type');
+  const elevatorBrandFilter = document.getElementById('elevator-brand');
+  const applyFiltersButton = document.getElementById('apply-filters');
+  
+  // Gestionnaire d'événement pour le bouton d'application des filtres
+  applyFiltersButton.addEventListener('click', function() {
+    currentDocumentType = documentTypeFilter.value;
+    currentElevatorBrand = elevatorBrandFilter.value;
+    
+    // Appliquer les filtres aux résultats actuels
+    applyFiltersToResults();
+  });
+}
+
+// Fonction pour appliquer les filtres aux résultats
+function applyFiltersToResults() {
+  if (currentSearchResults.length === 0) {
+    return; // Pas de résultats à filtrer
+  }
+  
+  // Filtrer les résultats selon les critères sélectionnés
+  let filteredResults = [...currentSearchResults];
+  
+  // Filtre par type de document
+  if (currentDocumentType) {
+    filteredResults = filteredResults.filter(file => {
+      if (currentDocumentType === 'pdf' && file.mimeType === 'application/pdf') {
+        return true;
+      } else if (currentDocumentType === 'document' && file.mimeType.includes('document')) {
+        return true;
+      } else if (currentDocumentType === 'spreadsheet' && file.mimeType.includes('spreadsheet')) {
+        return true;
+      } else if (currentDocumentType === 'image' && file.mimeType.includes('image/')) {
+        return true;
+      }
+      return currentDocumentType === '';
+    });
+  }
+  
+  // Filtre par marque d'ascenseur (recherche dans le nom du fichier)
+  if (currentElevatorBrand) {
+    filteredResults = filteredResults.filter(file => {
+      return file.name.toLowerCase().includes(currentElevatorBrand.toLowerCase());
+    });
+  }
+  
+  // Afficher les résultats filtrés
+  displayResults(filteredResults);
+}
+
+// Modification de la fonction searchFiles existante
+async function searchFiles(query) {
+  try {
+    // Afficher l'indicateur de chargement
+    loadingIndicator.style.display = 'block';
+    resultsContainer.innerHTML = '';
+    previewContainer.innerHTML = '';
+    errorMessage.style.display = 'none';
+    
+    // Effectuer la requête à l'API
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    // Masquer l'indicateur de chargement
+    loadingIndicator.style.display = 'none';
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    // Stocker les résultats pour le filtrage
+    currentSearchResults = data.files;
+    
+    // Appliquer les filtres aux résultats
+    applyFiltersToResults();
+  } catch (error) {
+    loadingIndicator.style.display = 'none';
+    errorMessage.textContent = `Erreur: ${error.message}`;
+    errorMessage.style.display = 'block';
+  }
+}
+
+// Ajoutez cette ligne à votre fonction d'initialisation existante
+document.addEventListener('DOMContentLoaded', function() {
+  // Votre code d'initialisation existant...
+  
+  // Initialiser les filtres
+  initializeFilters();
+});
+
+
     // Fonction pour ajouter une recherche à l'historique
     function addToSearchHistory(query) {
       // Récupérer l'historique existant ou créer un tableau vide
@@ -773,6 +934,35 @@
         return;
       }
       
+      <div class="filters-section">
+  <div class="filter-group">
+    <label for="document-type">Type de document :</label>
+    <select id="document-type" class="filter-select">
+      <option value="">Tous les types</option>
+      <option value="pdf">PDF</option>
+      <option value="document">Documents texte</option>
+      <option value="spreadsheet">Feuilles de calcul</option>
+      <option value="image">Images</option>
+    </select>
+  </div>
+  
+  <div class="filter-group">
+    <label for="elevator-brand">Marque d'ascenseur :</label>
+    <select id="elevator-brand" class="filter-select">
+      <option value="">Toutes les marques</option>
+      <option value="kone">KONE</option>
+      <option value="otis">OTIS</option>
+      <option value="schindler">Schindler</option>
+      <option value="thyssenkrupp">ThyssenKrupp</option>
+      <option value="mitsubishi">Mitsubishi</option>
+      <option value="orona">Orona</option>
+    </select>
+  </div>
+  
+  <button id="apply-filters" class="filter-button">Appliquer les filtres</button>
+</div>
+
+
       // Ajouter la recherche à l'historique
       addToSearchHistory(query);
       
@@ -813,6 +1003,53 @@
       return text.replace(regex, '<mark>$1</mark>');
     }
     
+// Fonction pour afficher l'aperçu d'un fichier
+function displayFilePreview(fileId) {
+  // Récupérer ou créer le conteneur de prévisualisation
+  let previewContainer = document.getElementById('preview-container');
+  
+  // Si le conteneur n'existe pas, le créer
+  if (!previewContainer) {
+    previewContainer = document.createElement('div');
+    previewContainer.id = 'preview-container';
+    previewContainer.style.position = 'fixed';
+    previewContainer.style.top = '0';
+    previewContainer.style.left = '0';
+    previewContainer.style.width = '100%';
+    previewContainer.style.height = '100%';
+    previewContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    previewContainer.style.zIndex = '1000';
+    document.body.appendChild(previewContainer);
+  }
+  
+  // Afficher le conteneur
+  previewContainer.style.display = 'block';
+  
+  // Créer le contenu du conteneur de prévisualisation
+  previewContainer.innerHTML = `
+    <div style="display: flex; justify-content: flex-end; padding: 15px;">
+      <button id="close-preview" style="background-color: transparent; color: white; border: none; font-size: 24px; cursor: pointer;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="width: 90%; height: 85%; margin: 0 auto; background-color: white; border-radius: 4px; overflow: hidden;">
+      <iframe 
+        src="https://drive.google.com/file/d/${fileId}/preview" 
+        width="100%" 
+        height="100%" 
+        frameborder="0" 
+        allowfullscreen>
+      </iframe>
+    </div>
+  `;
+  
+  // Ajouter un gestionnaire d'événement pour fermer la prévisualisation
+  document.getElementById('close-preview').addEventListener('click', function() {
+    previewContainer.style.display = 'none';
+  });
+}
+
+
     // Visualiser un document
     async function viewDocument(id) {
       try {

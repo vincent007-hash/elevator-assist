@@ -24,16 +24,22 @@ async function authorize() {
     throw error;
   }
 }
-
-// Fonction pour lister les fichiers Drive avec recherche
-async function listDriveFiles(query) {
+// Fonction pour lister les fichiers Drive avec recherche avancée
+async function listDriveFiles(searchQuery) {
   try {
     const auth = await authorize();
     const drive = google.drive({ version: 'v3', auth });
     
+    // Si searchQuery est une chaîne simple, on la traite comme avant
     let q = "trashed=false";
-    if (query) {
-      q += ` and (name contains '${query}' or fullText contains '${query}')`;
+    if (typeof searchQuery === 'string') {
+      if (searchQuery.startsWith("trashed=false")) {
+        // C'est déjà une requête complète
+        q = searchQuery;
+      } else {
+        // C'est juste un terme de recherche
+        q += ` and (name contains '${searchQuery}' or fullText contains '${searchQuery}')`;
+      }
     }
     
     const res = await drive.files.list({
@@ -43,34 +49,34 @@ async function listDriveFiles(query) {
       pageSize: 20
     });
     
-    // Transformer les résultats pour inclure des URL de prévisualisation sécurisées
-    const files = res.data.files.map(file => {
-      let previewUrl;
-      
-      // Générer l'URL de prévisualisation selon le type de fichier
-      if (file.mimeType === 'application/pdf') {
-        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-      } else if (file.mimeType.includes('image/')) {
-        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-      } else if (file.mimeType.includes('spreadsheet')) {
-        previewUrl = `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
-      } else if (file.mimeType.includes('document')) {
-        previewUrl = `https://docs.google.com/document/d/${file.id}/preview`;
-      } else {
-        previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-      }
-      
-      return {
-        ...file,
-        previewUrl: previewUrl
-      };
-    });
-    
-    return files;
-  } catch (error) {
-    console.error('Erreur recherche Drive:', error);
-    throw error;
+// Transformer les résultats pour inclure des URL de prévisualisation sécurisées
+const files = res.data.files.map(file => {
+  let previewUrl;
+  
+  // Générer l'URL de prévisualisation selon le type de fichier
+  if (file.mimeType === 'application/pdf') {
+    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+  } else if (file.mimeType.includes('image/')) {
+    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+  } else if (file.mimeType.includes('spreadsheet')) {
+    previewUrl = `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
+  } else if (file.mimeType.includes('document')) {
+    previewUrl = `https://docs.google.com/document/d/${file.id}/preview`;
+  } else {
+    previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
   }
+  
+  return {
+    ...file,
+    previewUrl: previewUrl
+  };
+});
+
+return files;
+} catch (error) {
+console.error('Erreur recherche Drive:', error);
+throw error;
+}
 }
 
 // Fonction pour obtenir l'aperçu d'un fichier
