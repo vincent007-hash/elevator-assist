@@ -49,7 +49,7 @@ async function listDriveFiles(searchQuery) {
       pageSize: 20
     });
     
-// Transformer les résultats pour inclure des URL de prévisualisation sécurisées
+    // Transformer les résultats pour inclure des URL de prévisualisation sécurisées
     const files = res.data.files.map(file => {
       let previewUrl;
       
