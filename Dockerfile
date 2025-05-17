@@ -1,26 +1,25 @@
 FROM node:16
 
-# Installation des dépendances système
+# Installation des dépendances système nécessaires
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
+    python3-pip \
     tesseract-ocr \
     tesseract-ocr-fra \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copier package.json et package-lock.json
+# Copier uniquement package.json d'abord pour exploiter le cache Docker
 COPY package*.json ./
 
-# Installer les dépendances
+# Installer explicitement TensorFlow.js avec --build-from-source
 RUN npm install
+RUN npm install @tensorflow/tfjs-node --build-from-source
 
 # Copier le reste des fichiers
 COPY . .
 
-# Exposer le port
-EXPOSE 10000
-
-# Commande de démarrage
+# Commande pour démarrer l'application
 CMD ["node", "server.js"]
