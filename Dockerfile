@@ -1,6 +1,6 @@
 FROM node:16
 
-# Installation des dépendances système nécessaires
+# Installation des dépendances système
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-fra \
     && rm -rf /var/lib/apt/lists/*
 
-# Définir le répertoire de travail
 WORKDIR /app
 
 # Copier package.json et package-lock.json
@@ -17,8 +16,11 @@ COPY package*.json ./
 # Installer les dépendances
 RUN npm install
 
-# Copier le reste des fichiers du projet
+# Copier le reste des fichiers
 COPY . .
 
-# Commande pour démarrer l'application
+# Exposer le port
+EXPOSE 10000
+
+# Commande de démarrage
 CMD ["node", "server.js"]
