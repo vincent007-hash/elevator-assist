@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:18
 
 # Installation des dépendances système nécessaires
 RUN apt-get update && apt-get install -y \
@@ -14,9 +14,12 @@ WORKDIR /app
 # Copier uniquement package.json d'abord pour exploiter le cache Docker
 COPY package*.json ./
 
-# Installer explicitement TensorFlow.js avec --build-from-source
+# Installer les dépendances normales
 RUN npm install
+
+# Installer TensorFlow et le modèle USE explicitement
 RUN npm install @tensorflow/tfjs-node --build-from-source
+RUN npm install @tensorflow-models/universal-sentence-encoder
 
 # Copier le reste des fichiers
 COPY . .
