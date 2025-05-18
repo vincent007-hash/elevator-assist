@@ -13,25 +13,19 @@ WORKDIR /app
 # Copier package.json
 COPY package*.json ./
 
-# Installer les dépendances avec versions spécifiques
+# Installer les dépendances de base
 RUN npm install
-RUN npm install @tensorflow/tfjs@4.1.0
-RUN npm install @tensorflow/tfjs-node@4.1.0
-RUN npm install @tensorflow-models/universal-sentence-encoder@1.3.3
 RUN npm install express-fileupload
 RUN npm install node-fetch@2.6.7
+
+# Installer TensorFlow.js avec la version spécifique compatible
+RUN npm install @tensorflow/tfjs@3.6.0
+RUN npm install @tensorflow/tfjs-converter@3.6.0
+RUN npm install @tensorflow/tfjs-core@3.6.0
 RUN npm install @tensorflow/tfjs-node@3.6.0 --build-from-source
+
+# Installer Universal Sentence Encoder après TensorFlow
 RUN npm install @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
-
-
-
-# Télécharger le modèle USE pendant la construction de l'image
-RUN mkdir -p /root/.cache/tfjs-models/
-WORKDIR /root/.cache/tfjs-models/
-RUN curl -O https://tfhub.dev/tensorflow/tfjs-model/universal-sentence-encoder/1/default/1/model.json
-RUN curl -O https://tfhub.dev/tensorflow/tfjs-model/universal-sentence-encoder/1/default/1/group1-shard1of1.bin
-WORKDIR /app
-
 
 # Copier le reste des fichiers
 COPY . .
