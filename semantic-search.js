@@ -1,11 +1,27 @@
 const tf = require('@tensorflow/tfjs-node');
 const use = require('@tensorflow-models/universal-sentence-encoder');
+const fetch = require('node-fetch');
 const pdf = require('pdf-parse');
+
+// Définir fetch global pour USE
+global.fetch = fetch;
 
 class SemanticSearch {
   constructor() {
     this.model = null;
     this.documents = [];
+  }
+
+  async initialize() {
+    try {
+      console.log("Chargement du modèle USE...");
+      this.model = await use.load();
+      console.log("Modèle chargé avec succès");
+      return true;
+    } catch (error) {
+      console.error("Erreur d'initialisation:", error);
+      throw error;
+    }
   }
 
 // Ajouter cette méthode à votre classe SemanticSearch

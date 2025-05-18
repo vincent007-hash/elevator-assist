@@ -13,13 +13,13 @@ WORKDIR /app
 # Copier package.json
 COPY package*.json ./
 
-# Installer les dépendances
+# Installer les dépendances avec versions spécifiques
 RUN npm install
+RUN npm install @tensorflow/tfjs@4.1.0
+RUN npm install @tensorflow/tfjs-node@4.1.0
+RUN npm install @tensorflow-models/universal-sentence-encoder@1.3.3
 RUN npm install express-fileupload
-# Installer TensorFlow et le modèle USE avec legacy-peer-deps
-RUN npm install @tensorflow/tfjs-node@3.21.0 --build-from-source
-RUN npm install @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
-
+RUN npm install node-fetch
 
 # Copier le reste des fichiers
 COPY . .
