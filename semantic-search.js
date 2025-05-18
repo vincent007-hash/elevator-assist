@@ -8,6 +8,20 @@ class SemanticSearch {
     this.documents = [];
   }
 
+// Ajouter cette méthode à votre classe SemanticSearch
+preprocessTechnicalText(text) {
+    // Normaliser les codes d'erreur (ex: E0107, E-0107, Error 0107)
+    text = text.replace(/[Ee][-\s]?(\d{4})/g, 'CODE_$1');
+    
+    // Normaliser les références de modèles d'ascenseurs
+    text = text.replace(/(KONE|OTIS|SCHINDLER|THYSSEN)[\s-]([A-Z0-9]+)/gi, '$1_$2');
+    
+    // Normaliser les unités de mesure
+    text = text.replace(/(\d+)[\s]?(kg|mm|cm|m|A|V)/g, '$1_$2');
+    
+    return text;
+  }  
+
   async initialize() {
     try {
       console.log("Chargement du modèle USE...");
@@ -28,8 +42,11 @@ class SemanticSearch {
       const pdfData = await pdf(buffer);
       console.log(`PDF analysé: ${pdfData.numpages} pages`);
       
-      // Découpage en paragraphes
-      const chunks = this.splitText(pdfData.text);
+      // Prétraitement du texte
+      const processedText = this.preprocessTechnicalText(pdfData.text);
+      
+      // Découpage en chunks
+      const chunks = this.splitText(processedText);
       console.log(`Document découpé en ${chunks.length} segments`);
       
       // Génération des embeddings
@@ -61,14 +78,18 @@ class SemanticSearch {
     const paragraphs = text.split(/\n\s*\n/);
     
     let currentChunk = '';
-    const MAX_CHUNK_SIZE = 500;
+    const MAX_CHUNK_SIZE = 1500;
+    const OVERLAP_SIZE = 100;
     
     for (const paragraph of paragraphs) {
       if (currentChunk.length + paragraph.length > MAX_CHUNK_SIZE) {
         if (currentChunk.length > 0) {
           chunks.push(currentChunk.trim());
+          // Garder une partie du texte pour le chevauchement
+          const words = currentChunk.split(' ');
+          currentChunk = words.slice(Math.max(0, words.length - OVERLAP_SIZE)).join(' ');
         }
-        currentChunk = paragraph;
+        currentChunk += paragraph;
       } else {
         currentChunk += '\n\n' + paragraph;
       }

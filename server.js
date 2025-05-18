@@ -157,8 +157,13 @@ app.post('/api/index-pdf', async (req, res) => {
       return res.status(400).json({ error: 'Aucun fichier PDF fourni' });
     }
     
+    const documentType = req.body.documentType || 'unknown';
+    const elevatorBrand = req.body.elevatorBrand || 'unknown';
+    
     const result = await semanticSearch.processPDF(req.files.pdf.data, {
       filename: req.files.pdf.name,
+      documentType: documentType,
+      elevatorBrand: elevatorBrand,
       uploadedAt: new Date().toISOString()
     });
     
