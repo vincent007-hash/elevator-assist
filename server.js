@@ -1,4 +1,5 @@
 const express = require('express');
+const fileUpload = require('express-fileupload');
 const multer = require('multer');
 const path = require('path');
 const { google } = require('googleapis');
@@ -7,6 +8,7 @@ const { authorize, listDriveFiles, getFilePreview } = require('./drive.js');
 const app = express();
 const port = process.env.PORT || 3000;
 const upload = multer({ dest: 'uploads/' });
+
 
 const semanticSearch = require('./semantic-search');
 
