@@ -231,15 +231,20 @@
         
         // Préparer les données du formulaire
         const formData = new FormData(indexingForm);
-        
-        try {
-          // Envoyer le fichier pour indexation
-          const response = await fetch('/api/index-pdf', {
-            method: 'POST',
-            body: formData
-          });
-          
-          const result = await response.json();
+  console.log("Fichier à envoyer:", formData.get('pdf'));
+  
+  try {
+    const response = await fetch('/api/index-pdf', {
+      method: 'POST',
+      body: formData,
+      // Ne pas définir de Content-Type ici, le navigateur le fait automatiquement
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erreur HTTP: ${response.status}`);
+    }
+    
+    const result = await response.json();
           
           if (result.success) {
             statusContainer.innerHTML = `
@@ -256,6 +261,7 @@
             throw new Error(result.error || 'Échec de l\'indexation');
           }
         } catch (error) {
+        console.error("Erreur:", error);  
           statusContainer.innerHTML = `
             <div class="error-message">
               <i class="fas fa-exclamation-circle"></i>

@@ -61,6 +61,11 @@ app.post('/api/semantic-search', async (req, res) => {
 app.use(express.static('public'));
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 },
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 
 // Base de données simplifiée
 const documents = [];
@@ -149,6 +154,13 @@ const semanticSearchService = require('./semantic-search');
     console.error("Erreur d'initialisation du service de recherche sémantique:", error);
   }
 })();
+
+app.post('/api/index-pdf', async (req, res) => {
+  console.log('Files received:', req.files);
+  if (!req.files || Object.keys(req.files).length === 0 || !req.files.pdf) {
+    return res.status(400).json({ error: 'Aucun fichier PDF fourni' });
+  }
+});
 
 // Route pour l'indexation des PDFs
 app.post('/api/index-pdf', async (req, res) => {
