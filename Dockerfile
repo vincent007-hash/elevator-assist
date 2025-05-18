@@ -19,7 +19,16 @@ RUN npm install @tensorflow/tfjs@4.1.0
 RUN npm install @tensorflow/tfjs-node@4.1.0
 RUN npm install @tensorflow-models/universal-sentence-encoder@1.3.3
 RUN npm install express-fileupload
-RUN npm install node-fetch
+RUN npm install node-fetch@2.6.7
+
+
+# Télécharger le modèle USE pendant la construction de l'image
+RUN mkdir -p /root/.cache/tfjs-models/
+WORKDIR /root/.cache/tfjs-models/
+RUN curl -O https://tfhub.dev/tensorflow/tfjs-model/universal-sentence-encoder/1/default/1/model.json
+RUN curl -O https://tfhub.dev/tensorflow/tfjs-model/universal-sentence-encoder/1/default/1/group1-shard1of1.bin
+WORKDIR /app
+
 
 # Copier le reste des fichiers
 COPY . .
