@@ -1,26 +1,18 @@
 const tf = require('@tensorflow/tfjs-node');
 const use = require('@tensorflow-models/universal-sentence-encoder');
-const { ChromaClient } = require('chromadb');
 const pdf = require('pdf-parse');
-const Tesseract = require('tesseract.js');
 
 class SemanticSearch {
   constructor() {
     this.model = null;
-    this.client = new ChromaClient();
-    this.collection = null;
+    this.documents = [];
   }
 
   async initialize() {
     try {
-      console.log("Initialisation du modèle d'embeddings...");
+      console.log("Chargement du modèle USE...");
       this.model = await use.load();
       console.log("Modèle chargé avec succès");
-      
-      console.log("Connexion à ChromaDB...");
-      this.collection = await this.client.createCollection('elevator-docs');
-      console.log("Collection ChromaDB créée avec succès");
-      
       return true;
     } catch (error) {
       console.error("Erreur d'initialisation:", error);
@@ -36,59 +28,40 @@ class SemanticSearch {
       const pdfData = await pdf(buffer);
       console.log(`PDF analysé: ${pdfData.numpages} pages`);
       
-      // OCR (pour les parties scannées/images)
-      const { data: { text: ocrText } } = await Tesseract.recognize(
-        buffer, 
-        'fra', 
-        { logger: m => console.log(m) }
-      );
-      
-      // Fusion des textes
-      const fullText = pdfData.text + '\n' + ocrText;
-      console.log(`Texte extrait: ${fullText.length} caractères`);
-      
-      // Découpage adapté aux documents techniques
-      const chunks = this.splitTechnicalText(fullText);
+      // Découpage en paragraphes
+      const chunks = this.splitText(pdfData.text);
       console.log(`Document découpé en ${chunks.length} segments`);
       
       // Génération des embeddings
       console.log("Génération des embeddings...");
       const embeddings = await this.model.embed(chunks);
       
-      // Stockage dans ChromaDB
-      console.log("Stockage dans ChromaDB...");
-      const ids = chunks.map((_, i) => `doc-${metadata.id || Date.now()}-chunk-${i}`);
-      
-      await this.collection.add({
-        ids: ids,
-        embeddings: embeddings.arraySync(),
-        documents: chunks,
-        metadatas: chunks.map(text => ({
-          ...metadata,
-          containsCode: /code erreur|défaut [A-Z0-9]{4}/i.test(text),
-          containsSchema: /schéma|circuit|diagram/i.test(text),
-          length: text.length
-        }))
-      });
+      // Stocker les embeddings et le texte
+      for (let i = 0; i < chunks.length; i++) {
+        this.documents.push({
+          text: chunks[i],
+          embedding: embeddings.slice([i, 0], [1, -1]),
+          metadata: {
+            ...metadata,
+            page: Math.floor(i / 5) + 1
+          }
+        });
+      }
       
       console.log("PDF traité et indexé avec succès");
-      return {
-        success: true,
-        chunks: chunks.length
-      };
+      return { success: true, chunks: chunks.length };
     } catch (error) {
       console.error("Erreur de traitement du PDF:", error);
       throw error;
     }
   }
 
-  splitTechnicalText(text) {
-    // Découpage adapté aux documents techniques
+  splitText(text) {
     const chunks = [];
     const paragraphs = text.split(/\n\s*\n/);
     
     let currentChunk = '';
-    const MAX_CHUNK_SIZE = 1000;
+    const MAX_CHUNK_SIZE = 500;
     
     for (const paragraph of paragraphs) {
       if (currentChunk.length + paragraph.length > MAX_CHUNK_SIZE) {
@@ -110,26 +83,40 @@ class SemanticSearch {
 
   async search(query) {
     try {
+      if (!this.model) {
+        throw new Error("Le modèle n'est pas initialisé");
+      }
+      
       console.log(`Recherche: "${query}"`);
       
       // Génération de l'embedding pour la requête
       const queryEmbedding = await this.model.embed([query]);
       
-      // Recherche dans ChromaDB
-      const results = await this.collection.query({
-        queryEmbeddings: queryEmbedding.arraySync(),
-        nResults: 5
+      // Calculer la similarité avec tous les documents
+      const results = this.documents.map(doc => {
+        // Calculer la similarité cosinus
+        const similarity = this.cosineSimilarity(
+          queryEmbedding.arraySync()[0],
+          doc.embedding.arraySync()[0]
+        );
+        
+        return {
+          text: doc.text,
+          score: similarity,
+          metadata: doc.metadata
+        };
       });
       
-      console.log(`${results.documents.length} résultats trouvés`);
+      // Trier par score de similarité
+      results.sort((a, b) => b.score - a.score);
+      
+      // Retourner les 5 meilleurs résultats
+      const topResults = results.slice(0, 5);
+      console.log(`${topResults.length} résultats trouvés`);
       
       return {
-        results: results.documents.map((doc, i) => ({
-          text: doc,
-          score: results.distances[i],
-          metadata: results.metadatas[i]
-        })),
-        answer: this.generateAnswer(query, results.documents)
+        results: topResults,
+        answer: this.generateAnswer(query, topResults.map(r => r.text))
       };
     } catch (error) {
       console.error("Erreur de recherche:", error);
@@ -137,8 +124,14 @@ class SemanticSearch {
     }
   }
 
+  cosineSimilarity(vecA, vecB) {
+    const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+    const magA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+    const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+    return dotProduct / (magA * magB);
+  }
+
   generateAnswer(question, contexts) {
-    // Version simple - à remplacer par un LLM plus tard
     const contextStr = contexts.join('\n\n');
     return `D'après la documentation technique, voici les informations pertinentes :\n\n${contextStr.substring(0, 1500)}...`;
   }

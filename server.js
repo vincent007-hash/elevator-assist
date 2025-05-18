@@ -138,6 +138,55 @@ app.get('/api/view-file/:fileId', async (req, res) => {
   }
 });
 
+const semanticSearch = require('./semantic-search');
+
+// Initialisation du service de recherche sémantique
+(async () => {
+  try {
+    await semanticSearch.initialize();
+    console.log("Service de recherche sémantique initialisé avec succès");
+  } catch (error) {
+    console.error("Erreur d'initialisation du service de recherche sémantique:", error);
+  }
+})();
+
+// Route pour l'indexation des PDFs
+app.post('/api/index-pdf', async (req, res) => {
+  try {
+    if (!req.files || !req.files.pdf) {
+      return res.status(400).json({ error: 'Aucun fichier PDF fourni' });
+    }
+    
+    const result = await semanticSearch.processPDF(req.files.pdf.data, {
+      filename: req.files.pdf.name,
+      uploadedAt: new Date().toISOString()
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error("Erreur d'indexation:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour la recherche sémantique
+app.post('/api/semantic-search', async (req, res) => {
+  try {
+    const { query } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Requête de recherche manquante' });
+    }
+    
+    const results = await semanticSearch.search(query);
+    res.json(results);
+  } catch (error) {
+    console.error("Erreur de recherche:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 // Ajouter cette route pour le callback OAuth
 app.get('/oauth2callback', (req, res) => {
   const code = req.query.code;
