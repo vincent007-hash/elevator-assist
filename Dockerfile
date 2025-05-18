@@ -20,6 +20,9 @@ RUN npm install @tensorflow/tfjs-node@4.1.0
 RUN npm install @tensorflow-models/universal-sentence-encoder@1.3.3
 RUN npm install express-fileupload
 RUN npm install node-fetch@2.6.7
+RUN npm install @tensorflow/tfjs-node@3.6.0 --build-from-source
+RUN npm install @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
+
 
 
 # Télécharger le modèle USE pendant la construction de l'image
