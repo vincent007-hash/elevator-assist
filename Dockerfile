@@ -17,8 +17,8 @@ COPY package*.json ./
 RUN npm install
 RUN npm install express-fileupload
 # Installer TensorFlow et le modèle USE avec legacy-peer-deps
-RUN npm install tensorflow/tfjs-node@3.21.0 --build-from-source
-RUN npm install tensorflow-models/universal-sentence-encoder --legacy-peer-deps
+RUN npm install @tensorflow/tfjs-node@3.21.0 --build-from-source
+RUN npm install @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
 
 
 # Copier le reste des fichiers
