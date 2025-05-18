@@ -138,7 +138,7 @@ app.get('/api/view-file/:fileId', async (req, res) => {
   }
 });
 
-const semanticSearch = require('./semantic-search');
+const semanticSearchService = require('./semantic-search');
 
 // Initialisation du service de recherche sémantique
 (async () => {
