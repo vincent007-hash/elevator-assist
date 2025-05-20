@@ -12,7 +12,7 @@ class SemanticSearch {
   constructor() {
     this.model = null;
     this.documents = [];
-    this.dataPath = path.join(__dirname, 'data');
+    this.dataPath = path.join('/tmp', 'data');
     this.embeddingsPath = path.join(this.dataPath, 'embeddings.json');
     this.initializeDataDirectory();
   }
