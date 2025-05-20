@@ -195,7 +195,7 @@ preprocessTechnicalText(text) {
       results.sort((a, b) => b.score - a.score);
       
       // Filtrer les résultats avec un seuil de similarité
-      const SIMILARITY_THRESHOLD = 0.3;
+      const SIMILARITY_THRESHOLD = 0.1;
       const topResults = results
         .filter(r => r.score > SIMILARITY_THRESHOLD)
         .slice(0, 5);
