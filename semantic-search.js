@@ -94,22 +94,27 @@ preprocessTechnicalText(text) {
       const chunks = this.splitText(processedText);
       console.log(`Document découpé en ${chunks.length} segments`);
       
-      // Génération des embeddings
-      console.log("Génération des embeddings...");
-      const embeddings = await this.model.embed(chunks);
-      
-      // Stocker les embeddings et le texte
-      for (let i = 0; i < chunks.length; i++) {
-        this.documents.push({
-          text: chunks[i],
-          embedding: embeddings.slice([i, 0], [1, -1]),
-          metadata: {
-            ...metadata,
-            page: Math.floor(i / 5) + 1,
-            processedAt: new Date().toISOString()
-          }
-        });
+      // Génération des embeddings par lots
+      console.log("Génération des embeddings par lots...");
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE);
+        const batchEmbeddings = await this.model.embed(batch);
+        for (let j = 0; j < batch.length; j++) {
+          this.documents.push({
+            text: batch[j],
+            embedding: batchEmbeddings.slice([j, 0], [1, -1]),
+            metadata: {
+              ...metadata,
+              page: Math.floor((i + j) / 5) + 1,
+              processedAt: new Date().toISOString()
+            }
+          });
+        }
+        console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1} traité (${i + batch.length}/${chunks.length})`);
       }
+      
+      console.log('Exemple de chunk indexé :', chunks[0]);
       
       // Sauvegarder les documents après traitement
       await this.saveDocuments();
@@ -190,12 +195,13 @@ preprocessTechnicalText(text) {
       results.sort((a, b) => b.score - a.score);
       
       // Filtrer les résultats avec un seuil de similarité
-      const SIMILARITY_THRESHOLD = 0.5;
+      const SIMILARITY_THRESHOLD = 0.3;
       const topResults = results
         .filter(r => r.score > SIMILARITY_THRESHOLD)
         .slice(0, 5);
       
       console.log(`${topResults.length} résultats trouvés`);
+      console.log('Score de similarité pour chaque segment :', results.map(r => r.score));
       
       return {
         results: topResults,
