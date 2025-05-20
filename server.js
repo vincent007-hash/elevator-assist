@@ -119,10 +119,11 @@ const semanticSearchService = require('./semantic-search');
 // Initialisation du service de recherche sémantique
 (async () => {
   try {
-    await semanticSearch.initialize();
+    await semanticSearchService.initialize();
     console.log("Service de recherche sémantique initialisé avec succès");
   } catch (error) {
     console.error("Erreur d'initialisation du service de recherche sémantique:", error);
+    process.exit(1); // Arrêter le serveur si l'initialisation échoue
   }
 })();
 
@@ -136,7 +137,7 @@ app.post('/api/index-pdf', async (req, res) => {
     const documentType = req.body.documentType || 'unknown';
     const elevatorBrand = req.body.elevatorBrand || 'unknown';
     
-    const result = await semanticSearch.processPDF(req.files.pdf.data, {
+    const result = await semanticSearchService.processPDF(req.files.pdf.data, {
       filename: req.files.pdf.name,
       documentType: documentType,
       elevatorBrand: elevatorBrand,
@@ -159,7 +160,7 @@ app.post('/api/semantic-search', async (req, res) => {
       return res.status(400).json({ error: 'Requête de recherche manquante' });
     }
     
-    const results = await semanticSearch.search(query);
+    const results = await semanticSearchService.search(query);
     res.json(results);
   } catch (error) {
     console.error("Erreur de recherche:", error);

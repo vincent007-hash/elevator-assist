@@ -2,6 +2,8 @@ const tf = require('@tensorflow/tfjs-node');
 const use = require('@tensorflow-models/universal-sentence-encoder');
 const fetch = require('node-fetch');
 const pdf = require('pdf-parse');
+const fs = require('fs');
+const path = require('path');
 
 // Définir fetch global pour USE
 global.fetch = fetch;
@@ -10,6 +12,44 @@ class SemanticSearch {
   constructor() {
     this.model = null;
     this.documents = [];
+    this.dataPath = path.join(__dirname, 'data');
+    this.embeddingsPath = path.join(this.dataPath, 'embeddings.json');
+    this.initializeDataDirectory();
+  }
+
+  initializeDataDirectory() {
+    if (!fs.existsSync(this.dataPath)) {
+      fs.mkdirSync(this.dataPath, { recursive: true });
+    }
+  }
+
+  async loadDocuments() {
+    try {
+      if (fs.existsSync(this.embeddingsPath)) {
+        const data = JSON.parse(fs.readFileSync(this.embeddingsPath, 'utf8'));
+        this.documents = data.map(doc => ({
+          ...doc,
+          embedding: tf.tensor(doc.embedding)
+        }));
+        console.log(`${this.documents.length} documents chargés depuis le stockage`);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des documents:", error);
+      this.documents = [];
+    }
+  }
+
+  async saveDocuments() {
+    try {
+      const data = this.documents.map(doc => ({
+        ...doc,
+        embedding: doc.embedding.arraySync()
+      }));
+      fs.writeFileSync(this.embeddingsPath, JSON.stringify(data));
+      console.log("Documents sauvegardés avec succès");
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des documents:", error);
+    }
   }
 
   async initialize() {
@@ -17,6 +57,7 @@ class SemanticSearch {
       console.log("Chargement du modèle USE...");
       this.model = await use.load();
       console.log("Modèle chargé avec succès");
+      await this.loadDocuments();
       return true;
     } catch (error) {
       console.error("Erreur d'initialisation:", error);
@@ -37,18 +78,6 @@ preprocessTechnicalText(text) {
     
     return text;
   }  
-
-  async initialize() {
-    try {
-      console.log("Chargement du modèle USE...");
-      this.model = await use.load();
-      console.log("Modèle chargé avec succès");
-      return true;
-    } catch (error) {
-      console.error("Erreur d'initialisation:", error);
-      throw error;
-    }
-  }
 
   async processPDF(buffer, metadata = {}) {
     try {
@@ -76,16 +105,20 @@ preprocessTechnicalText(text) {
           embedding: embeddings.slice([i, 0], [1, -1]),
           metadata: {
             ...metadata,
-            page: Math.floor(i / 5) + 1
+            page: Math.floor(i / 5) + 1,
+            processedAt: new Date().toISOString()
           }
         });
       }
+      
+      // Sauvegarder les documents après traitement
+      await this.saveDocuments();
       
       console.log("PDF traité et indexé avec succès");
       return { success: true, chunks: chunks.length };
     } catch (error) {
       console.error("Erreur de traitement du PDF:", error);
-      throw error;
+      throw new Error(`Erreur de traitement du PDF: ${error.message}`);
     }
   }
 
@@ -124,14 +157,23 @@ preprocessTechnicalText(text) {
         throw new Error("Le modèle n'est pas initialisé");
       }
       
+      if (this.documents.length === 0) {
+        return {
+          results: [],
+          answer: "Aucun document n'a été indexé pour le moment."
+        };
+      }
+      
       console.log(`Recherche: "${query}"`);
       
+      // Prétraitement de la requête
+      const processedQuery = this.preprocessTechnicalText(query);
+      
       // Génération de l'embedding pour la requête
-      const queryEmbedding = await this.model.embed([query]);
+      const queryEmbedding = await this.model.embed([processedQuery]);
       
       // Calculer la similarité avec tous les documents
       const results = this.documents.map(doc => {
-        // Calculer la similarité cosinus
         const similarity = this.cosineSimilarity(
           queryEmbedding.arraySync()[0],
           doc.embedding.arraySync()[0]
@@ -147,8 +189,12 @@ preprocessTechnicalText(text) {
       // Trier par score de similarité
       results.sort((a, b) => b.score - a.score);
       
-      // Retourner les 5 meilleurs résultats
-      const topResults = results.slice(0, 5);
+      // Filtrer les résultats avec un seuil de similarité
+      const SIMILARITY_THRESHOLD = 0.5;
+      const topResults = results
+        .filter(r => r.score > SIMILARITY_THRESHOLD)
+        .slice(0, 5);
+      
       console.log(`${topResults.length} résultats trouvés`);
       
       return {
@@ -157,7 +203,7 @@ preprocessTechnicalText(text) {
       };
     } catch (error) {
       console.error("Erreur de recherche:", error);
-      throw error;
+      throw new Error(`Erreur de recherche: ${error.message}`);
     }
   }
 
