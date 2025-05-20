@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const { google } = require('googleapis');
 const { authorize, listDriveFiles, getFilePreview } = require('./drive.js');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -138,15 +139,22 @@ app.post('/api/index-pdf', async (req, res) => {
       // Affiche tous les noms de champs reçus pour aider au debug
       return res.status(400).json({ error: `Aucun fichier PDF fourni. Champs reçus: ${Object.keys(req.files).join(', ')}` });
     }
-    if (!req.files.pdf.data || req.files.pdf.data.length === 0) {
-      return res.status(400).json({ error: 'Le fichier PDF est vide ou corrompu.' });
+    let pdfBuffer;
+    if (req.files.pdf.data && req.files.pdf.data.length > 0) {
+      pdfBuffer = req.files.pdf.data;
+      console.log('Lecture du PDF depuis req.files.pdf.data');
+    } else if (req.files.pdf.tempFilePath) {
+      pdfBuffer = fs.readFileSync(req.files.pdf.tempFilePath);
+      console.log('Lecture du PDF depuis tempFilePath:', req.files.pdf.tempFilePath);
+    } else {
+      return res.status(400).json({ error: 'Impossible de lire le fichier PDF.' });
     }
-    console.log('Taille du PDF reçu :', req.files.pdf.data.length);
+    console.log('Taille du PDF reçu :', pdfBuffer.length);
     
     const documentType = req.body.documentType || 'unknown';
     const elevatorBrand = req.body.elevatorBrand || 'unknown';
     
-    const result = await semanticSearchService.processPDF(req.files.pdf.data, {
+    const result = await semanticSearchService.processPDF(pdfBuffer, {
       filename: req.files.pdf.name,
       documentType: documentType,
       elevatorBrand: elevatorBrand,
