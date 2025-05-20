@@ -5,7 +5,7 @@ const { google } = require('googleapis');
 async function authorize() {
   try {
     // Charger les informations du compte de service
-    const serviceAccount = require('./service-account.json');
+    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
     
     // Créer un client JWT avec le compte de service
     const auth = new google.auth.JWT(

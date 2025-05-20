@@ -130,9 +130,18 @@ const semanticSearchService = require('./semantic-search');
 // Route pour l'indexation des PDFs
 app.post('/api/index-pdf', async (req, res) => {
   try {
-    if (!req.files || !req.files.pdf) {
-      return res.status(400).json({ error: 'Aucun fichier PDF fourni' });
+    console.log('req.files:', req.files);
+    if (!req.files) {
+      return res.status(400).json({ error: 'Aucun fichier uploadé (req.files est vide)' });
     }
+    if (!req.files.pdf) {
+      // Affiche tous les noms de champs reçus pour aider au debug
+      return res.status(400).json({ error: `Aucun fichier PDF fourni. Champs reçus: ${Object.keys(req.files).join(', ')}` });
+    }
+    if (!req.files.pdf.data || req.files.pdf.data.length === 0) {
+      return res.status(400).json({ error: 'Le fichier PDF est vide ou corrompu.' });
+    }
+    console.log('Taille du PDF reçu :', req.files.pdf.data.length);
     
     const documentType = req.body.documentType || 'unknown';
     const elevatorBrand = req.body.elevatorBrand || 'unknown';
