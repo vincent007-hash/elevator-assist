@@ -5,11 +5,14 @@ const path = require('path');
 const { google } = require('googleapis');
 const { authorize, listDriveFiles, getFilePreview } = require('./drive.js');
 const fs = require('fs');
+const pdf = require('pdf-parse');
 
 const app = express();
 const port = process.env.PORT || 3000;
 const upload = multer({ dest: 'uploads/' });
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Nouvelle route pour la recherche sémantique
 app.post('/api/semantic-search', async (req, res) => {
@@ -139,6 +142,10 @@ app.post('/api/index-pdf', async (req, res) => {
       // Affiche tous les noms de champs reçus pour aider au debug
       return res.status(400).json({ error: `Aucun fichier PDF fourni. Champs reçus: ${Object.keys(req.files).join(', ')}` });
     }
+    if (!req.files.pdf.data && !req.files.pdf.tempFilePath) {
+      return res.status(400).json({ error: 'Impossible de lire le fichier PDF.' });
+    }
+
     let pdfBuffer;
     if (req.files.pdf.data && req.files.pdf.data.length > 0) {
       pdfBuffer = req.files.pdf.data;
@@ -198,6 +205,92 @@ app.get('/oauth2callback', (req, res) => {
     res.status(400).send("Erreur: code d'autorisation manquant");
   }
 });
+
+app.post('/api/semantic-search-drive', async (req, res) => {
+  console.log('req.body:', req.body); // Debug
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({ error: 'Le body de la requête est vide ou mal formé.' });
+  }
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'Requête manquante' });
+
+    // 1. Lister les fichiers Drive pertinents (ex: PDF)
+    const files = await listDriveFiles(query);
+
+    // 2. Charger le modèle sémantique
+    const model = await use.load();
+
+    // 3. Générer l'embedding de la requête
+    const queryEmbedding = await model.embed([query]);
+    const queryVec = queryEmbedding.arraySync()[0];
+
+    let results = [];
+
+    // 4. Pour chaque fichier, extraire le texte et scorer
+    for (const file of files) {
+      if (!file.mimeType.startsWith('application/pdf')) continue;
+
+      // Télécharger le PDF depuis Drive
+      const auth = await authorize();
+      const drive = google.drive({ version: 'v3', auth });
+      const pdfRes = await drive.files.get(
+        { fileId: file.id, alt: 'media' },
+        { responseType: 'arraybuffer' }
+      );
+      const pdfBuffer = Buffer.from(pdfRes.data);
+
+      // Extraire le texte
+      const pdfData = await pdf(pdfBuffer);
+      const text = pdfData.text;
+
+      // Découper en chunks
+      const chunks = text.split(/\n\s*\n/).filter(c => c.length > 50);
+
+      // Générer les embeddings pour chaque chunk
+      const chunkEmbeddings = await model.embed(chunks);
+
+      // Calculer la similarité pour chaque chunk
+      const chunkScores = chunkEmbeddings.arraySync().map(chunkVec =>
+        cosineSimilarity(queryVec, chunkVec)
+      );
+
+      // Prendre le meilleur chunk
+      let bestIdx = 0;
+      let bestScore = chunkScores[0] || 0;
+      for (let i = 1; i < chunkScores.length; i++) {
+        if (chunkScores[i] > bestScore) {
+          bestScore = chunkScores[i];
+          bestIdx = i;
+        }
+      }
+
+      results.push({
+        fileName: file.name,
+        fileId: file.id,
+        previewUrl: file.previewUrl,
+        passage: chunks[bestIdx],
+        score: bestScore
+      });
+    }
+
+    // Trier par score décroissant
+    results.sort((a, b) => b.score - a.score);
+
+    // Retourner les meilleurs résultats
+    res.json({ results: results.slice(0, 5) });
+  } catch (error) {
+    console.error('Erreur recherche sémantique Drive:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function cosineSimilarity(vecA, vecB) {
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const magA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dotProduct / (magA * magB);
+}
 
 app.listen(process.env.PORT || 10000, '0.0.0.0', () => {
   console.log(`Serveur démarré sur le port ${process.env.PORT || 10000}`);

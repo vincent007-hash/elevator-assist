@@ -1018,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
       performSearch();
     }
     
-    // Fonction de recherche sémantique
+    // Fonction de recherche sémantique sur Google Drive
     async function performSearch() {
       const query = document.getElementById('searchInput').value;
       const results = document.getElementById('results');
@@ -1036,8 +1036,8 @@ document.addEventListener('DOMContentLoaded', function() {
       resultsContainer.style.display = 'block';
 
       try {
-        // Appel à l'API de recherche sémantique
-        const response = await fetch('/api/semantic-search', {
+        // Appel à l'API de recherche sémantique sur Drive
+        const response = await fetch('/api/semantic-search-drive', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: query })
@@ -1048,11 +1048,11 @@ document.addEventListener('DOMContentLoaded', function() {
           results.innerHTML = data.results.map(doc => {
             return `
               <div class="result-card">
-                <h3>${highlightText(doc.text || doc.name, query)}</h3>
+                <h3>${highlightText(doc.fileName, query)}</h3>
                 <div style="font-size:0.9em;color:#aaa;margin-bottom:8px;">
-                  ${doc.metadata && doc.metadata.filename ? doc.metadata.filename : ''}
+                  ${highlightText(doc.passage, query)}
                 </div>
-                <button onclick="viewDocument('${doc.metadata && doc.metadata.id ? doc.metadata.id : ''}')">Visualiser</button>
+                <button onclick="window.open('${doc.previewUrl}', '_blank')">Visualiser</button>
               </div>
             `;
           }).join('');
