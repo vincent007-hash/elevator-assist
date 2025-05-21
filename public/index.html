@@ -1018,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
       performSearch();
     }
     
-    // Fonction de recherche
+    // Fonction de recherche sémantique
     async function performSearch() {
       const query = document.getElementById('searchInput').value;
       const results = document.getElementById('results');
@@ -1028,29 +1028,35 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Veuillez saisir un terme de recherche');
         return;
       }
-      
-
 
       // Ajouter la recherche à l'historique
       addToSearchHistory(query);
-      
+
       results.innerHTML = '<p>Recherche en cours...</p>';
       resultsContainer.style.display = 'block';
-      
+
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        // Appel à l'API de recherche sémantique
+        const response = await fetch('/api/semantic-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query })
+        });
         const data = await response.json();
-        
+
         if (data.results && data.results.length > 0) {
           results.innerHTML = data.results.map(doc => {
             return `
               <div class="result-card">
-                <h3>${highlightText(doc.name, query)}</h3>
-                <button onclick="viewDocument('${doc.id || doc.fileId}')">Visualiser</button>
+                <h3>${highlightText(doc.text || doc.name, query)}</h3>
+                <div style="font-size:0.9em;color:#aaa;margin-bottom:8px;">
+                  ${doc.metadata && doc.metadata.filename ? doc.metadata.filename : ''}
+                </div>
+                <button onclick="viewDocument('${doc.metadata && doc.metadata.id ? doc.metadata.id : ''}')">Visualiser</button>
               </div>
             `;
           }).join('');
-          
+
           // Faire défiler jusqu'aux résultats
           resultsContainer.scrollIntoView({ behavior: 'smooth' });
         } else {

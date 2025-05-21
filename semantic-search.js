@@ -171,11 +171,8 @@ preprocessTechnicalText(text) {
       
       console.log(`Recherche: "${query}"`);
       
-      // Prétraitement de la requête
-      const processedQuery = this.preprocessTechnicalText(query);
-      
       // Génération de l'embedding pour la requête
-      const queryEmbedding = await this.model.embed([processedQuery]);
+      const queryEmbedding = await this.model.embed([query]);
       
       // Calculer la similarité avec tous les documents
       const results = this.documents.map(doc => {
@@ -202,6 +199,10 @@ preprocessTechnicalText(text) {
       
       console.log(`${topResults.length} résultats trouvés`);
       console.log('Score de similarité pour chaque segment :', results.map(r => r.score));
+      
+      results.slice(0, 5).forEach((r, i) => {
+        console.log(`Chunk ${i+1} :`, r.text.substring(0, 80), '| Score :', r.score);
+      });
       
       return {
         results: topResults,
