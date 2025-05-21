@@ -246,6 +246,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
       try {
         pdfData = await pdf(pdfBuffer);
         text = pdfData.text;
+        console.log(`Texte extrait (${text.length} caractères)`);
       } catch (e) {
         console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
         continue;
@@ -254,12 +255,12 @@ app.post('/api/semantic-search-drive', async (req, res) => {
       console.log(`Texte extrait du fichier ${file.name} :`, text.substring(0, 200));
 
       // Découper en chunks
-      const chunks = text.split(/\n\s*\n/).filter(c => c.length > 50);
-
-      if (chunks.length === 0) {
-        console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
-        continue;
+      const chunks = [];
+      for (let i = 0; i < text.length; i += 500) {
+        const chunk = text.slice(i, i + 500);
+        if (chunk.length > 50) chunks.push(chunk);
       }
+      console.log(`Nombre de chunks générés: ${chunks.length}`);
 
       // Générer les embeddings pour chaque chunk
       const chunkEmbeddings = await model.embed(chunks);
@@ -281,15 +282,16 @@ app.post('/api/semantic-search-drive', async (req, res) => {
 
       console.log(`Analyse du fichier: ${file.name}, ${chunks.length} chunks`);
       console.log('Scores:', chunkScores);
+      console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
       if (chunks[bestIdx]) {
-        console.log('Meilleur passage:', chunks[bestIdx].substring(0, 100), '| Score:', bestScore);
+        console.log('Meilleur passage:', chunks[bestIdx].substring(0, 200), '...');
       }
 
       results.push({
         fileName: file.name,
         fileId: file.id,
         previewUrl: file.previewUrl,
-        passage: chunks[bestIdx],
+        passage: chunks[bestIdx] || 'Aucun passage pertinent trouvé',
         score: bestScore
       });
     }
