@@ -262,13 +262,22 @@ app.post('/api/semantic-search-drive', async (req, res) => {
       }
       console.log(`Nombre de chunks générés: ${chunks.length}`);
 
+      if (chunks.length === 0) {
+        console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
+        continue;
+      }
+
+      console.log('Génération des embeddings pour les chunks...');
+
       // Générer les embeddings pour chaque chunk
       const chunkEmbeddings = await model.embed(chunks);
+      console.log('Embeddings générés avec succès');
 
       // Calculer la similarité pour chaque chunk
       const chunkScores = chunkEmbeddings.arraySync().map(chunkVec =>
         cosineSimilarity(queryVec, chunkVec)
       );
+      console.log(`Scores calculés pour ${chunkScores.length} chunks`);
 
       // Prendre le meilleur chunk
       let bestIdx = 0;
@@ -280,8 +289,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         }
       }
 
-      console.log(`Analyse du fichier: ${file.name}, ${chunks.length} chunks`);
-      console.log('Scores:', chunkScores);
+      console.log(`Analyse du fichier: ${file.name}`);
       console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
       if (chunks[bestIdx]) {
         console.log('Meilleur passage:', chunks[bestIdx].substring(0, 200), '...');
@@ -294,6 +302,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         passage: chunks[bestIdx] || 'Aucun passage pertinent trouvé',
         score: bestScore
       });
+
+      console.log(`Résultat ajouté pour ${file.name}`);
     }
 
     // Trier par score décroissant
