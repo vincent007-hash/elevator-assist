@@ -6,6 +6,7 @@ const { google } = require('googleapis');
 const { authorize, listDriveFiles, getFilePreview } = require('./drive.js');
 const fs = require('fs');
 const pdf = require('pdf-parse');
+const use = require('@tensorflow-models/universal-sentence-encoder');
 
 const app = express();
 const port = process.env.PORT || 3000;
