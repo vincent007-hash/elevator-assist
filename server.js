@@ -267,6 +267,12 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         }
       }
 
+      console.log(`Analyse du fichier: ${file.name}, ${chunks.length} chunks`);
+      console.log('Scores:', chunkScores);
+      if (chunks[bestIdx]) {
+        console.log('Meilleur passage:', chunks[bestIdx].substring(0, 100), '| Score:', bestScore);
+      }
+
       results.push({
         fileName: file.name,
         fileId: file.id,
