@@ -217,7 +217,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     if (!query) return res.status(400).json({ error: 'Requête manquante' });
 
     // 1. Lister les fichiers Drive pertinents (ex: PDF)
-    const files = await listDriveFiles(query);
+    const files = await listDriveFiles(""); // ou "pdf" pour forcer tous les PDF
+    console.log('Fichiers Drive trouvés:', files.map(f => f.name));
 
     // 2. Charger le modèle sémantique
     const model = await use.load();
