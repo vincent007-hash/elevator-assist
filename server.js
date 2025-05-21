@@ -242,12 +242,24 @@ app.post('/api/semantic-search-drive', async (req, res) => {
       );
       const pdfBuffer = Buffer.from(pdfRes.data);
 
-      // Extraire le texte
-      const pdfData = await pdf(pdfBuffer);
-      const text = pdfData.text;
+      let pdfData, text;
+      try {
+        pdfData = await pdf(pdfBuffer);
+        text = pdfData.text;
+      } catch (e) {
+        console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
+        continue;
+      }
+
+      console.log(`Texte extrait du fichier ${file.name} :`, text.substring(0, 200));
 
       // Découper en chunks
       const chunks = text.split(/\n\s*\n/).filter(c => c.length > 50);
+
+      if (chunks.length === 0) {
+        console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
+        continue;
+      }
 
       // Générer les embeddings pour chaque chunk
       const chunkEmbeddings = await model.embed(chunks);
