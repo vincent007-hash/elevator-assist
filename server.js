@@ -220,6 +220,22 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     const files = await listDriveFiles("");
     console.log('Fichiers Drive trouvés:', files.map(f => f.name));
 
+    // Filtrer les fichiers PDF et les trier par pertinence du nom
+    const pdfFiles = files
+      .filter(file => file.mimeType.startsWith('application/pdf'))
+      .filter(file => {
+        const fileName = file.name.toLowerCase();
+        const queryTerms = query.toLowerCase().split(' ');
+        return queryTerms.some(term => fileName.includes(term));
+      })
+      .slice(0, 3); // Limiter à 3 fichiers maximum
+
+    console.log('Fichiers PDF pertinents sélectionnés:', pdfFiles.map(f => f.name));
+
+    if (pdfFiles.length === 0) {
+      return res.json({ results: [] });
+    }
+
     // 2. S'assurer que le modèle est chargé
     if (!model) {
       console.log('Le modèle n\'est pas chargé, tentative de chargement...');
@@ -234,9 +250,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
 
     // 4. Pour chaque fichier, extraire le texte et scorer
     const BATCH_SIZE = 10;
-    for (const file of files) {
-      if (!file.mimeType.startsWith('application/pdf')) continue;
-
+    for (const file of pdfFiles) {
       console.log(`\nAnalyse du fichier: ${file.name}`);
 
       try {
