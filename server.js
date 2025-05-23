@@ -208,7 +208,7 @@ app.get('/oauth2callback', (req, res) => {
 });
 
 app.post('/api/semantic-search-drive', async (req, res) => {
-  console.log('req.body:', req.body); // Debug
+  console.log('req.body:', req.body);
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).json({ error: 'Le body de la requête est vide ou mal formé.' });
   }
@@ -216,8 +216,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     const { query } = req.body;
     if (!query) return res.status(400).json({ error: 'Requête manquante' });
 
-    // 1. Lister les fichiers Drive pertinents (ex: PDF)
-    const files = await listDriveFiles(""); // ou "pdf" pour forcer tous les PDF
+    // 1. Lister les fichiers Drive pertinents
+    const files = await listDriveFiles("");
     console.log('Fichiers Drive trouvés:', files.map(f => f.name));
 
     // 2. Charger le modèle sémantique
@@ -232,6 +232,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     // 4. Pour chaque fichier, extraire le texte et scorer
     for (const file of files) {
       if (!file.mimeType.startsWith('application/pdf')) continue;
+
+      console.log(`\nAnalyse du fichier: ${file.name}`);
 
       // Télécharger le PDF depuis Drive
       const auth = await authorize();
@@ -252,9 +254,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         continue;
       }
 
-      console.log(`Texte extrait du fichier ${file.name} :`, text.substring(0, 200));
-
-      // Découper en chunks
+      // Découper en chunks de 500 caractères
       const chunks = [];
       for (let i = 0; i < text.length; i += 500) {
         const chunk = text.slice(i, i + 500);
@@ -267,39 +267,42 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         continue;
       }
 
-      console.log('Génération des embeddings pour les chunks...');
-
-      // Générer les embeddings pour chaque chunk
-      const chunkEmbeddings = await model.embed(chunks);
-      console.log('Embeddings générés avec succès');
-
-      // Calculer la similarité pour chaque chunk
-      const chunkScores = chunkEmbeddings.arraySync().map(chunkVec =>
-        cosineSimilarity(queryVec, chunkVec)
-      );
-      console.log(`Scores calculés pour ${chunkScores.length} chunks`);
-
-      // Prendre le meilleur chunk
+      // Traiter les chunks par lots de 50 pour économiser la mémoire
+      const BATCH_SIZE = 50;
+      let bestScore = 0;
+      let bestChunk = '';
       let bestIdx = 0;
-      let bestScore = chunkScores[0] || 0;
-      for (let i = 1; i < chunkScores.length; i++) {
-        if (chunkScores[i] > bestScore) {
-          bestScore = chunkScores[i];
-          bestIdx = i;
+
+      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE);
+        console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
+
+        // Générer les embeddings pour le lot
+        const batchEmbeddings = await model.embed(batch);
+        const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
+          cosineSimilarity(queryVec, chunkVec)
+        );
+
+        // Mettre à jour le meilleur score
+        for (let j = 0; j < batchScores.length; j++) {
+          if (batchScores[j] > bestScore) {
+            bestScore = batchScores[j];
+            bestChunk = batch[j];
+            bestIdx = i + j;
+          }
         }
       }
 
-      console.log(`Analyse du fichier: ${file.name}`);
       console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
-      if (chunks[bestIdx]) {
-        console.log('Meilleur passage:', chunks[bestIdx].substring(0, 200), '...');
+      if (bestChunk) {
+        console.log('Meilleur passage:', bestChunk.substring(0, 200), '...');
       }
 
       results.push({
         fileName: file.name,
         fileId: file.id,
         previewUrl: file.previewUrl,
-        passage: chunks[bestIdx] || 'Aucun passage pertinent trouvé',
+        passage: bestChunk || 'Aucun passage pertinent trouvé',
         score: bestScore
       });
 
@@ -308,6 +311,12 @@ app.post('/api/semantic-search-drive', async (req, res) => {
 
     // Trier par score décroissant
     results.sort((a, b) => b.score - a.score);
+
+    // Afficher les résultats finaux
+    console.log('\nRésultats finaux:');
+    results.slice(0, 5).forEach((r, i) => {
+      console.log(`${i + 1}. ${r.fileName} (score: ${r.score.toFixed(4)})`);
+    });
 
     // Retourner les meilleurs résultats
     res.json({ results: results.slice(0, 5) });
