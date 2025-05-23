@@ -220,8 +220,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     const files = await listDriveFiles("");
     console.log('Fichiers Drive trouvés:', files.map(f => f.name));
 
-    // 2. Charger le modèle sémantique
-    const model = await use.load();
+    // 2. Utiliser le modèle déjà chargé
+    const model = await loadModel();
 
     // 3. Générer l'embedding de la requête
     const queryEmbedding = await model.embed([query]);
@@ -267,8 +267,8 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         continue;
       }
 
-      // Traiter les chunks par lots de 50 pour économiser la mémoire
-      const BATCH_SIZE = 50;
+      // Traiter les chunks par lots de 20 pour économiser la mémoire
+      const BATCH_SIZE = 20;
       let bestScore = 0;
       let bestChunk = '';
       let bestIdx = 0;
@@ -277,19 +277,27 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         const batch = chunks.slice(i, i + BATCH_SIZE);
         console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
 
-        // Générer les embeddings pour le lot
-        const batchEmbeddings = await model.embed(batch);
-        const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
-          cosineSimilarity(queryVec, chunkVec)
-        );
+        try {
+          // Générer les embeddings pour le lot
+          const batchEmbeddings = await model.embed(batch);
+          const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
+            cosineSimilarity(queryVec, chunkVec)
+          );
 
-        // Mettre à jour le meilleur score
-        for (let j = 0; j < batchScores.length; j++) {
-          if (batchScores[j] > bestScore) {
-            bestScore = batchScores[j];
-            bestChunk = batch[j];
-            bestIdx = i + j;
+          // Mettre à jour le meilleur score
+          for (let j = 0; j < batchScores.length; j++) {
+            if (batchScores[j] > bestScore) {
+              bestScore = batchScores[j];
+              bestChunk = batch[j];
+              bestIdx = i + j;
+            }
           }
+
+          // Forcer le nettoyage de la mémoire
+          batchEmbeddings.dispose();
+        } catch (e) {
+          console.error(`Erreur lors du traitement du lot ${i/BATCH_SIZE + 1}:`, e);
+          continue;
         }
       }
 
@@ -332,6 +340,20 @@ function cosineSimilarity(vecA, vecB) {
   const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
   return dotProduct / (magA * magB);
 }
+
+let model = null;
+
+async function loadModel() {
+  if (!model) {
+    console.log('Chargement du modèle USE...');
+    model = await use.load();
+    console.log('Modèle chargé avec succès');
+  }
+  return model;
+}
+
+// Charger le modèle au démarrage
+loadModel().catch(console.error);
 
 app.listen(process.env.PORT || 10000, '0.0.0.0', () => {
   console.log(`Serveur démarré sur le port ${process.env.PORT || 10000}`);
