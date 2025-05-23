@@ -220,8 +220,11 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     const files = await listDriveFiles("");
     console.log('Fichiers Drive trouvés:', files.map(f => f.name));
 
-    // 2. Utiliser le modèle déjà chargé
-    const model = await loadModel();
+    // 2. S'assurer que le modèle est chargé
+    if (!model) {
+      console.log('Le modèle n\'est pas chargé, tentative de chargement...');
+      await loadModel();
+    }
 
     // 3. Générer l'embedding de la requête
     const queryEmbedding = await model.embed([query]);
@@ -230,91 +233,96 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     let results = [];
 
     // 4. Pour chaque fichier, extraire le texte et scorer
+    const BATCH_SIZE = 10;
     for (const file of files) {
       if (!file.mimeType.startsWith('application/pdf')) continue;
 
       console.log(`\nAnalyse du fichier: ${file.name}`);
 
-      // Télécharger le PDF depuis Drive
-      const auth = await authorize();
-      const drive = google.drive({ version: 'v3', auth });
-      const pdfRes = await drive.files.get(
-        { fileId: file.id, alt: 'media' },
-        { responseType: 'arraybuffer' }
-      );
-      const pdfBuffer = Buffer.from(pdfRes.data);
-
-      let pdfData, text;
       try {
-        pdfData = await pdf(pdfBuffer);
-        text = pdfData.text;
-        console.log(`Texte extrait (${text.length} caractères)`);
-      } catch (e) {
-        console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
-        continue;
-      }
+        // Télécharger le PDF depuis Drive
+        const auth = await authorize();
+        const drive = google.drive({ version: 'v3', auth });
+        const pdfRes = await drive.files.get(
+          { fileId: file.id, alt: 'media' },
+          { responseType: 'arraybuffer' }
+        );
+        const pdfBuffer = Buffer.from(pdfRes.data);
 
-      // Découper en chunks de 500 caractères
-      const chunks = [];
-      for (let i = 0; i < text.length; i += 500) {
-        const chunk = text.slice(i, i + 500);
-        if (chunk.length > 50) chunks.push(chunk);
-      }
-      console.log(`Nombre de chunks générés: ${chunks.length}`);
-
-      if (chunks.length === 0) {
-        console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
-        continue;
-      }
-
-      // Traiter les chunks par lots de 20 pour économiser la mémoire
-      const BATCH_SIZE = 20;
-      let bestScore = 0;
-      let bestChunk = '';
-      let bestIdx = 0;
-
-      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-        const batch = chunks.slice(i, i + BATCH_SIZE);
-        console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
-
+        let pdfData, text;
         try {
-          // Générer les embeddings pour le lot
-          const batchEmbeddings = await model.embed(batch);
-          const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
-            cosineSimilarity(queryVec, chunkVec)
-          );
-
-          // Mettre à jour le meilleur score
-          for (let j = 0; j < batchScores.length; j++) {
-            if (batchScores[j] > bestScore) {
-              bestScore = batchScores[j];
-              bestChunk = batch[j];
-              bestIdx = i + j;
-            }
-          }
-
-          // Forcer le nettoyage de la mémoire
-          batchEmbeddings.dispose();
+          pdfData = await pdf(pdfBuffer);
+          text = pdfData.text;
+          console.log(`Texte extrait (${text.length} caractères)`);
         } catch (e) {
-          console.error(`Erreur lors du traitement du lot ${i/BATCH_SIZE + 1}:`, e);
+          console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
           continue;
         }
+
+        // Découper en chunks de 500 caractères
+        const chunks = [];
+        for (let i = 0; i < text.length; i += 500) {
+          const chunk = text.slice(i, i + 500);
+          if (chunk.length > 50) chunks.push(chunk);
+        }
+        console.log(`Nombre de chunks générés: ${chunks.length}`);
+
+        if (chunks.length === 0) {
+          console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
+          continue;
+        }
+
+        // Traiter les chunks par lots de 10 pour économiser la mémoire
+        let bestScore = 0;
+        let bestChunk = '';
+        let bestIdx = 0;
+
+        for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+          const batch = chunks.slice(i, i + BATCH_SIZE);
+          console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
+
+          try {
+            // Générer les embeddings pour le lot
+            const batchEmbeddings = await model.embed(batch);
+            const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
+              cosineSimilarity(queryVec, chunkVec)
+            );
+
+            // Mettre à jour le meilleur score
+            for (let j = 0; j < batchScores.length; j++) {
+              if (batchScores[j] > bestScore) {
+                bestScore = batchScores[j];
+                bestChunk = batch[j];
+                bestIdx = i + j;
+              }
+            }
+
+            // Forcer le nettoyage de la mémoire
+            batchEmbeddings.dispose();
+          } catch (e) {
+            console.error(`Erreur lors du traitement du lot ${i/BATCH_SIZE + 1}:`, e);
+            continue;
+          }
+        }
+
+        console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
+        if (bestChunk) {
+          console.log('Meilleur passage:', bestChunk.substring(0, 200), '...');
+        }
+
+        results.push({
+          fileName: file.name,
+          fileId: file.id,
+          previewUrl: file.previewUrl,
+          passage: bestChunk || 'Aucun passage pertinent trouvé',
+          score: bestScore
+        });
+
+        console.log(`Résultat ajouté pour ${file.name}`);
+      } catch (error) {
+        console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
+        continue;
       }
-
-      console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
-      if (bestChunk) {
-        console.log('Meilleur passage:', bestChunk.substring(0, 200), '...');
-      }
-
-      results.push({
-        fileName: file.name,
-        fileId: file.id,
-        previewUrl: file.previewUrl,
-        passage: bestChunk || 'Aucun passage pertinent trouvé',
-        score: bestScore
-      });
-
-      console.log(`Résultat ajouté pour ${file.name}`);
     }
 
     // Trier par score décroissant
@@ -341,19 +349,43 @@ function cosineSimilarity(vecA, vecB) {
   return dotProduct / (magA * magB);
 }
 
+// Initialisation du modèle USE
 let model = null;
+let isModelLoading = false;
 
 async function loadModel() {
-  if (!model) {
+  if (model) return model;
+  if (isModelLoading) {
+    console.log('Le modèle est déjà en cours de chargement...');
+    return new Promise((resolve) => {
+      const checkModel = setInterval(() => {
+        if (model) {
+          clearInterval(checkModel);
+          resolve(model);
+        }
+      }, 100);
+    });
+  }
+
+  try {
+    isModelLoading = true;
     console.log('Chargement du modèle USE...');
     model = await use.load();
     console.log('Modèle chargé avec succès');
+    return model;
+  } catch (error) {
+    console.error('Erreur lors du chargement du modèle:', error);
+    throw error;
+  } finally {
+    isModelLoading = false;
   }
-  return model;
 }
 
 // Charger le modèle au démarrage
-loadModel().catch(console.error);
+loadModel().catch(error => {
+  console.error('Erreur critique lors du chargement du modèle:', error);
+  process.exit(1);
+});
 
 app.listen(process.env.PORT || 10000, '0.0.0.0', () => {
   console.log(`Serveur démarré sur le port ${process.env.PORT || 10000}`);
