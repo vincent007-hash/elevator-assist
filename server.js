@@ -253,111 +253,128 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     for (const file of pdfFiles) {
       console.log(`\nAnalyse du fichier: ${file.name}`);
 
-      try {
-        // Télécharger le PDF depuis Drive
-        const auth = await authorize();
-        const drive = google.drive({ version: 'v3', auth });
-        const pdfRes = await drive.files.get(
-          { fileId: file.id, alt: 'media' },
-          { responseType: 'arraybuffer' }
-        );
-        const pdfBuffer = Buffer.from(pdfRes.data);
-
-        let pdfData, text;
+      // Timeout de 60 secondes par PDF
+      let pdfTimeout;
+      const pdfPromise = new Promise(async (resolve) => {
         try {
-          pdfData = await pdf(pdfBuffer);
-          text = pdfData.text;
-          console.log(`Texte extrait (${text.length} caractères)`);
-          console.log('Extrait du texte du PDF:', text.substring(0, 500));
-        } catch (e) {
-          console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
-          continue;
-        }
+          // Télécharger le PDF depuis Drive
+          const auth = await authorize();
+          const drive = google.drive({ version: 'v3', auth });
+          const pdfRes = await drive.files.get(
+            { fileId: file.id, alt: 'media' },
+            { responseType: 'arraybuffer' }
+          );
+          const pdfBuffer = Buffer.from(pdfRes.data);
 
-        // Découper en chunks de 500 caractères
-        const chunks = [];
-        for (let i = 0; i < text.length; i += 500) {
-          const chunk = text.slice(i, i + 500);
-          if (chunk.length > 50) chunks.push(chunk);
-        }
-        console.log(`Nombre de chunks générés: ${chunks.length}`);
-
-        // Limiter à 200 chunks max pour éviter les crashs mémoire
-        if (chunks.length > 200) {
-          console.log(`Trop de chunks (${chunks.length}), on limite à 200 pour ${file.name}`);
-          chunks.length = 200;
-        }
-
-        if (chunks.length === 0) {
-          console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
-          continue;
-        }
-
-        // Traiter les chunks par lots de 10 pour économiser la mémoire
-        let passages = [];
-        let bestScore = 0;
-        let bestChunk = '';
-        let bestIdx = 0;
-
-        for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-          const batch = chunks.slice(i, i + BATCH_SIZE);
-          console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
-
+          let pdfData, text;
           try {
-            // Générer les embeddings pour le lot
-            const batchEmbeddings = await model.embed(batch);
-            const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
-              cosineSimilarity(queryVec, chunkVec)
-            );
-
-            // Stocker tous les passages scorés
-            for (let j = 0; j < batchScores.length; j++) {
-              passages.push({
-                passage: batch[j],
-                score: batchScores[j],
-                idx: i + j
-              });
-              if (batchScores[j] > bestScore) {
-                bestScore = batchScores[j];
-                bestChunk = batch[j];
-                bestIdx = i + j;
-              }
-            }
-
-            // Forcer le nettoyage de la mémoire
-            batchEmbeddings.dispose();
+            pdfData = await pdf(pdfBuffer);
+            text = pdfData.text;
+            console.log(`Texte extrait (${text.length} caractères)`);
+            console.log('Extrait du texte du PDF:', text.substring(0, 500));
           } catch (e) {
-            console.error(`Erreur lors du traitement du lot ${i/BATCH_SIZE + 1}:`, e);
-            continue;
+            console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
+            return resolve(); // On continue avec les autres fichiers
           }
+
+          // Découper en chunks de 500 caractères
+          const chunks = [];
+          for (let i = 0; i < text.length; i += 500) {
+            const chunk = text.slice(i, i + 500);
+            if (chunk.length > 50) chunks.push(chunk);
+          }
+          console.log(`Nombre de chunks générés: ${chunks.length}`);
+
+          // Limiter à 200 chunks max pour éviter les crashs mémoire
+          if (chunks.length > 200) {
+            console.log(`Trop de chunks (${chunks.length}), on limite à 200 pour ${file.name}`);
+            chunks.length = 200;
+          }
+
+          if (chunks.length === 0) {
+            console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
+            return resolve();
+          }
+
+          // Traiter les chunks par lots de 10 pour économiser la mémoire
+          let passages = [];
+          let bestScore = 0;
+          let bestChunk = '';
+          let bestIdx = 0;
+
+          for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+            const batch = chunks.slice(i, i + BATCH_SIZE);
+            console.log(`Traitement du lot ${i/BATCH_SIZE + 1}/${Math.ceil(chunks.length/BATCH_SIZE)}`);
+
+            try {
+              // Générer les embeddings pour le lot
+              const batchEmbeddings = await model.embed(batch);
+              const batchScores = batchEmbeddings.arraySync().map(chunkVec =>
+                cosineSimilarity(queryVec, chunkVec)
+              );
+
+              // Stocker tous les passages scorés
+              for (let j = 0; j < batchScores.length; j++) {
+                passages.push({
+                  passage: batch[j],
+                  score: batchScores[j],
+                  idx: i + j
+                });
+                if (batchScores[j] > bestScore) {
+                  bestScore = batchScores[j];
+                  bestChunk = batch[j];
+                  bestIdx = i + j;
+                }
+              }
+
+              // Forcer le nettoyage de la mémoire
+              batchEmbeddings.dispose();
+            } catch (e) {
+              console.error(`Erreur lors du traitement du lot ${i/BATCH_SIZE + 1}:`, e);
+              continue;
+            }
+          }
+
+          // Filtrer les passages pertinents (score > 0.3)
+          const passagesPertinents = passages.filter(p => p.score > 0.3);
+          passagesPertinents.sort((a, b) => b.score - a.score);
+
+          // Si aucun passage n'est pertinent, prendre le meilleur quand même
+          let passagesFinal = passagesPertinents.length > 0 ? passagesPertinents : [
+            { passage: bestChunk, score: bestScore, idx: bestIdx }
+          ];
+
+          // Log passage(s) trouvé(s)
+          passagesFinal.forEach((p, idx) => {
+            console.log(`Passage ${idx + 1} (score: ${p.score.toFixed(4)}):`, p.passage.substring(0, 200), '...');
+          });
+
+          results.push({
+            fileName: file.name,
+            fileId: file.id,
+            previewUrl: file.previewUrl,
+            passages: passagesFinal.map(p => ({ passage: p.passage, score: p.score })),
+            bestScore: bestScore
+          });
+          console.log(`Résultat ajouté pour ${file.name} | BestScore: ${bestScore}`);
+          resolve();
+        } catch (error) {
+          console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
+          resolve();
         }
+      });
 
-        // Filtrer les passages pertinents (score > 0.3)
-        const passagesPertinents = passages.filter(p => p.score > 0.3);
-        passagesPertinents.sort((a, b) => b.score - a.score);
-
-        // Si aucun passage n'est pertinent, prendre le meilleur quand même
-        let passagesFinal = passagesPertinents.length > 0 ? passagesPertinents : [
-          { passage: bestChunk, score: bestScore, idx: bestIdx }
-        ];
-
-        // Log passage(s) trouvé(s)
-        passagesFinal.forEach((p, idx) => {
-          console.log(`Passage ${idx + 1} (score: ${p.score.toFixed(4)}):`, p.passage.substring(0, 200), '...');
-        });
-
-        results.push({
-          fileName: file.name,
-          fileId: file.id,
-          previewUrl: file.previewUrl,
-          passages: passagesFinal.map(p => ({ passage: p.passage, score: p.score })),
-          bestScore: bestScore
-        });
-        console.log(`Résultat ajouté pour ${file.name} | BestScore: ${bestScore}`);
-      } catch (error) {
-        console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
-        continue;
-      }
+      // Timeout de 60 secondes par PDF
+      await Promise.race([
+        pdfPromise,
+        new Promise((resolve) => {
+          pdfTimeout = setTimeout(() => {
+            console.error(`Timeout lors du traitement du fichier ${file.name}`);
+            resolve();
+          }, 60000);
+        })
+      ]);
+      clearTimeout(pdfTimeout);
     }
 
     // Trier par meilleur score décroissant
@@ -370,6 +387,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     });
 
     // Retourner les meilleurs résultats
+    console.log('Envoi de la réponse finale avec', results.length, 'résultats.');
     res.json({ results: results.slice(0, 5) });
   } catch (error) {
     console.error('Erreur recherche sémantique Drive:', error);
