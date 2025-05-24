@@ -268,6 +268,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
           pdfData = await pdf(pdfBuffer);
           text = pdfData.text;
           console.log(`Texte extrait (${text.length} caractères)`);
+          console.log('Extrait du texte du PDF:', text.substring(0, 500));
         } catch (e) {
           console.log(`Erreur extraction PDF pour ${file.name}:`, e.message);
           continue;
@@ -331,8 +332,12 @@ app.post('/api/semantic-search-drive', async (req, res) => {
           passage: bestChunk || 'Aucun passage pertinent trouvé',
           score: bestScore
         });
-
-        console.log(`Résultat ajouté pour ${file.name}`);
+        console.log(`Résultat ajouté pour ${file.name} | Score: ${bestScore}`);
+        if (bestChunk) {
+          console.log('Passage extrait:', bestChunk.substring(0, 300), '...');
+        } else {
+          console.log('Aucun passage pertinent trouvé dans ce PDF.');
+        }
       } catch (error) {
         console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
         continue;
