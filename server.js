@@ -228,7 +228,7 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         const queryTerms = query.toLowerCase().split(' ');
         return queryTerms.some(term => fileName.includes(term));
       })
-      .slice(0, 3); // Limiter à 3 fichiers maximum
+      .slice(0, 1); // Limiter à 1 fichier maximum
 
     console.log('Fichiers PDF pertinents sélectionnés:', pdfFiles.map(f => f.name));
 
@@ -247,6 +247,14 @@ app.post('/api/semantic-search-drive', async (req, res) => {
     const queryVec = queryEmbedding.arraySync()[0];
 
     let results = [];
+    let globalTimeout;
+    const globalTimeoutPromise = new Promise((resolve) => {
+      globalTimeout = setTimeout(() => {
+        console.error('Timeout global atteint, envoi de la réponse partielle.');
+        res.json({ results: results.slice(0, 5) });
+        resolve('timeout');
+      }, 40000); // 40 secondes
+    });
 
     // 4. Pour chaque fichier, extraire le texte et scorer
     const BATCH_SIZE = 10;
@@ -277,18 +285,18 @@ app.post('/api/semantic-search-drive', async (req, res) => {
             return resolve(); // On continue avec les autres fichiers
           }
 
-          // Découper en chunks de 500 caractères
+          // Découper en chunks de 300 caractères
           const chunks = [];
-          for (let i = 0; i < text.length; i += 500) {
-            const chunk = text.slice(i, i + 500);
+          for (let i = 0; i < text.length; i += 300) {
+            const chunk = text.slice(i, i + 300);
             if (chunk.length > 50) chunks.push(chunk);
           }
           console.log(`Nombre de chunks générés: ${chunks.length}`);
 
-          // Limiter à 200 chunks max pour éviter les crashs mémoire
-          if (chunks.length > 200) {
-            console.log(`Trop de chunks (${chunks.length}), on limite à 200 pour ${file.name}`);
-            chunks.length = 200;
+          // Limiter à 100 chunks max pour éviter les crashs mémoire
+          if (chunks.length > 100) {
+            console.log(`Trop de chunks (${chunks.length}), on limite à 100 pour ${file.name}`);
+            chunks.length = 100;
           }
 
           if (chunks.length === 0) {
@@ -367,28 +375,26 @@ app.post('/api/semantic-search-drive', async (req, res) => {
       // Timeout de 60 secondes par PDF
       await Promise.race([
         pdfPromise,
-        new Promise((resolve) => {
-          pdfTimeout = setTimeout(() => {
-            console.error(`Timeout lors du traitement du fichier ${file.name}`);
-            resolve();
-          }, 60000);
-        })
+        globalTimeoutPromise
       ]);
       clearTimeout(pdfTimeout);
+      if (res.headersSent) break; // Si la réponse a déjà été envoyée par le timeout global, on arrête tout
     }
+    clearTimeout(globalTimeout);
+    if (!res.headersSent) {
+      // Trier par meilleur score décroissant
+      results.sort((a, b) => b.bestScore - a.bestScore);
 
-    // Trier par meilleur score décroissant
-    results.sort((a, b) => b.bestScore - a.bestScore);
+      // Afficher les résultats finaux
+      console.log('\nRésultats finaux:');
+      results.slice(0, 5).forEach((r, i) => {
+        console.log(`${i + 1}. ${r.fileName} (bestScore: ${r.bestScore.toFixed(4)})`);
+      });
 
-    // Afficher les résultats finaux
-    console.log('\nRésultats finaux:');
-    results.slice(0, 5).forEach((r, i) => {
-      console.log(`${i + 1}. ${r.fileName} (bestScore: ${r.bestScore.toFixed(4)})`);
-    });
-
-    // Retourner les meilleurs résultats
-    console.log('Envoi de la réponse finale avec', results.length, 'résultats.');
-    res.json({ results: results.slice(0, 5) });
+      // Retourner les meilleurs résultats
+      console.log('Envoi de la réponse finale avec', results.length, 'résultats.');
+      res.json({ results: results.slice(0, 5) });
+    }
   } catch (error) {
     console.error('Erreur recherche sémantique Drive:', error);
     res.status(500).json({ error: error.message });
