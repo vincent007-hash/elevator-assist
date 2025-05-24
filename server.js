@@ -282,12 +282,19 @@ app.post('/api/semantic-search-drive', async (req, res) => {
         }
         console.log(`Nombre de chunks générés: ${chunks.length}`);
 
+        // Limiter à 200 chunks max pour éviter les crashs mémoire
+        if (chunks.length > 200) {
+          console.log(`Trop de chunks (${chunks.length}), on limite à 200 pour ${file.name}`);
+          chunks.length = 200;
+        }
+
         if (chunks.length === 0) {
           console.log(`Aucun chunk exploitable pour le fichier ${file.name}`);
           continue;
         }
 
         // Traiter les chunks par lots de 10 pour économiser la mémoire
+        let passages = [];
         let bestScore = 0;
         let bestChunk = '';
         let bestIdx = 0;
@@ -303,8 +310,13 @@ app.post('/api/semantic-search-drive', async (req, res) => {
               cosineSimilarity(queryVec, chunkVec)
             );
 
-            // Mettre à jour le meilleur score
+            // Stocker tous les passages scorés
             for (let j = 0; j < batchScores.length; j++) {
+              passages.push({
+                passage: batch[j],
+                score: batchScores[j],
+                idx: i + j
+              });
               if (batchScores[j] > bestScore) {
                 bestScore = batchScores[j];
                 bestChunk = batch[j];
@@ -320,37 +332,41 @@ app.post('/api/semantic-search-drive', async (req, res) => {
           }
         }
 
-        console.log(`Meilleur score trouvé: ${bestScore.toFixed(4)}`);
-        if (bestChunk) {
-          console.log('Meilleur passage:', bestChunk.substring(0, 200), '...');
-        }
+        // Filtrer les passages pertinents (score > 0.3)
+        const passagesPertinents = passages.filter(p => p.score > 0.3);
+        passagesPertinents.sort((a, b) => b.score - a.score);
+
+        // Si aucun passage n'est pertinent, prendre le meilleur quand même
+        let passagesFinal = passagesPertinents.length > 0 ? passagesPertinents : [
+          { passage: bestChunk, score: bestScore, idx: bestIdx }
+        ];
+
+        // Log passage(s) trouvé(s)
+        passagesFinal.forEach((p, idx) => {
+          console.log(`Passage ${idx + 1} (score: ${p.score.toFixed(4)}):`, p.passage.substring(0, 200), '...');
+        });
 
         results.push({
           fileName: file.name,
           fileId: file.id,
           previewUrl: file.previewUrl,
-          passage: bestChunk || 'Aucun passage pertinent trouvé',
-          score: bestScore
+          passages: passagesFinal.map(p => ({ passage: p.passage, score: p.score })),
+          bestScore: bestScore
         });
-        console.log(`Résultat ajouté pour ${file.name} | Score: ${bestScore}`);
-        if (bestChunk) {
-          console.log('Passage extrait:', bestChunk.substring(0, 300), '...');
-        } else {
-          console.log('Aucun passage pertinent trouvé dans ce PDF.');
-        }
+        console.log(`Résultat ajouté pour ${file.name} | BestScore: ${bestScore}`);
       } catch (error) {
         console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
         continue;
       }
     }
 
-    // Trier par score décroissant
-    results.sort((a, b) => b.score - a.score);
+    // Trier par meilleur score décroissant
+    results.sort((a, b) => b.bestScore - a.bestScore);
 
     // Afficher les résultats finaux
     console.log('\nRésultats finaux:');
     results.slice(0, 5).forEach((r, i) => {
-      console.log(`${i + 1}. ${r.fileName} (score: ${r.score.toFixed(4)})`);
+      console.log(`${i + 1}. ${r.fileName} (bestScore: ${r.bestScore.toFixed(4)})`);
     });
 
     // Retourner les meilleurs résultats
